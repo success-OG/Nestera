@@ -17,16 +17,32 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import GoalCard, { GoalStatus } from "./components/GoalCard";
+import { useOptimisticUpdate } from "../hooks/useOptimisticUpdate";
 import { ResponsiveTable } from "@/app/components/ui/ResponsiveTable";
 
 // export const metadata = { title: "Goal-Based Savings - Nestera" };
+
+interface Goal {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  status: GoalStatus;
+  targetAmount: string;
+  currentSaved: string;
+  remainingAmount: string;
+  progressPercent: number;
+  scheduleLabel: string;
+  contributionFrequency: string;
+  nextContributionLabel: string;
+  nextContributionValue: string;
+}
 
 export default function GoalBasedSavingsPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("All");
   const [sortBy, setSortBy] = React.useState("Progress");
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
-  const goals = [
+  const [goals, setGoals] = React.useState<Goal[]>([
     {
       id: "1",
       icon: <PiggyBank size={20} />,
@@ -83,8 +99,45 @@ export default function GoalBasedSavingsPage() {
       nextContributionLabel: "Next contribution",
       nextContributionValue: "N/A",
     },
-  ];
+  ]);
+
   const featuredGoal = goals[1];
+
+  // Optimistic update handler for goal contributions
+  const handleAddFunds = React.useCallback(async (goalId: string, amount: number) => {
+    // Store previous state for rollback
+    const previousGoals = [...goals];
+    
+    // Optimistically update the goal
+    setGoals(prevGoals => prevGoals.map(goal => {
+      if (goal.id === goalId) {
+        const currentSavedNum = parseFloat(goal.currentSaved.replace(/[$,]/g, ''));
+        const newSaved = currentSavedNum + amount;
+        const targetNum = parseFloat(goal.targetAmount.replace(/[$,]/g, ''));
+        const newProgress = Math.round((newSaved / targetNum) * 100);
+        const remaining = targetNum - newSaved;
+        
+        return {
+          ...goal,
+          currentSaved: `$${newSaved.toLocaleString()}`,
+          remainingAmount: `$${remaining.toLocaleString()}`,
+          progressPercent: newProgress,
+        };
+      }
+      return goal;
+    }));
+
+    try {
+      // Simulate API call - replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await api.addContribution(goalId, amount);
+    } catch (error) {
+      // Rollback on error
+      setGoals(previousGoals);
+      console.error('Failed to add contribution:', error);
+      // Show error toast here
+    }
+  }, [goals]);
   const contributions = [
     {
       date: "2026-03-25",
@@ -130,7 +183,7 @@ export default function GoalBasedSavingsPage() {
 
   const filteredGoals = React.useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    let filtered = goals.filter((goal) => {
+    let filtered = goals.filter((goal: Goal) => {
       const matchesSearch =
         !query ||
         goal.title.toLowerCase().includes(query) ||
@@ -139,7 +192,7 @@ export default function GoalBasedSavingsPage() {
       return matchesSearch && matchesStatus;
     });
 
-    filtered = filtered.sort((a, b) =>
+    filtered = filtered.sort((a: Goal, b: Goal) =>
       sortBy === "Target"
         ? parseInt(b.targetAmount.replace(/[$,]/g, ""), 10) -
           parseInt(a.targetAmount.replace(/[$,]/g, ""), 10)
@@ -250,7 +303,7 @@ export default function GoalBasedSavingsPage() {
             contributionFrequency={featuredGoal.contributionFrequency}
             nextContributionLabel={featuredGoal.nextContributionLabel}
             nextContributionValue={featuredGoal.nextContributionValue}
-            onAddFunds={() => console.log("Add funds", featuredGoal.id)}
+            onAddFunds={() => handleAddFunds(featuredGoal.id, 100)}
             onViewDetails={() => console.log("View details", featuredGoal.id)}
             onOverflowAction={() => console.log("More actions", featuredGoal.id)}
           />
@@ -340,7 +393,7 @@ export default function GoalBasedSavingsPage() {
               contributionFrequency={goal.contributionFrequency}
               nextContributionLabel={goal.nextContributionLabel}
               nextContributionValue={goal.nextContributionValue}
-              onAddFunds={() => console.log("Add funds", goal.id)}
+              onAddFunds={() => handleAddFunds(goal.id, 100)}
               onViewDetails={() => console.log("View details", goal.id)}
               onOverflowAction={() => console.log("More actions", goal.id)}
             />

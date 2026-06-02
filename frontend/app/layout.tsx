@@ -6,6 +6,8 @@ import IntlProvider from "./i18n/provider";
 import AnalyticsProvider from "./components/AnalyticsProvider";
 import MonitoringProvider from "./components/MonitoringProvider";
 import { StructuredData } from "./components/StructuredData";
+import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
+import InstallPrompt from "./components/InstallPrompt";
 import {
   generatePageMetadata,
   SITE_URL,
@@ -53,12 +55,53 @@ export default async function RootLayout({
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="format-detection" content="telephone=no" />
-        <meta name="theme-color" content="#061a1a" />
+        <meta name="theme-color" content="#00d4c0" />
+
+        {/* PWA / installability */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* Apple PWA meta */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Nestera" />
-        <link rel="apple-touch-icon" href="/favicon.ico" />
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.svg" />
+
+        {/* Apple splash screens (portrait) */}
+        <link
+          rel="apple-touch-startup-image"
+          media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)"
+          href="/splash/splash-430x932.svg"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)"
+          href="/splash/splash-393x852.svg"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+          href="/splash/splash-390x844.svg"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)"
+          href="/splash/splash-375x812.svg"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)"
+          href="/splash/splash-414x896.svg"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)"
+          href="/splash/splash-375x667.svg"
+        />
+
+        {/* Microsoft Tiles */}
+        <meta name="msapplication-TileColor" content="#061a1a" />
+        <meta name="msapplication-TileImage" content="/icons/icon-144x144.svg" />
+
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -75,6 +118,8 @@ export default async function RootLayout({
             <AnalyticsProvider />
             <MonitoringProvider />
           </Suspense>
+          <ServiceWorkerRegistration />
+          <InstallPrompt />
         </IntlProvider>
       </body>
     </html>

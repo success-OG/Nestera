@@ -1,6 +1,7 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { QueryLoggerService } from './query-logger.service';
+import { CompressionMetricsService } from '../../common/services/compression-metrics.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @ApiTags('Performance')
@@ -8,7 +9,10 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class PerformanceController {
-  constructor(private readonly queryLogger: QueryLoggerService) {}
+  constructor(
+    private readonly queryLogger: QueryLoggerService,
+    private readonly compressionMetricsService: CompressionMetricsService,
+  ) {}
 
   @Get('slow-queries')
   @ApiOperation({ summary: 'Get slow queries exceeding 100ms' })
@@ -37,5 +41,11 @@ export class PerformanceController {
     return {
       suggestions: this.queryLogger.suggestIndexes(),
     };
+  }
+
+  @Get('compression')
+  @ApiOperation({ summary: 'Get API response compression metrics' })
+  getCompressionMetrics() {
+    return this.compressionMetricsService.getMetrics();
   }
 }

@@ -28,6 +28,10 @@ import { GroupSavingsService } from './group-savings.service';
 import { GroupSavingsController } from './group-savings.controller';
 import { AutoDepositSchedule } from './entities/auto-deposit-schedule.entity';
 import { AutoDepositService } from './services/auto-deposit.service';
+import { SavingsGoalShare } from './entities/savings-goal-share.entity';
+import { SavingsGoalShareEvent } from './entities/savings-goal-share-event.entity';
+import { SavingsGoalSharingService } from './savings-goal-sharing.service';
+import { SavingsGoalSharingController } from './savings-goal-sharing.controller';
 
 @Module({
   imports: [
@@ -49,9 +53,16 @@ import { AutoDepositService } from './services/auto-deposit.service';
       SavingsGroupMember,
       SavingsGroupActivity,
       AutoDepositSchedule,
+      SavingsGoalShare,
+      SavingsGoalShareEvent,
     ]),
   ],
-  controllers: [SavingsController, WaitlistController, GroupSavingsController],
+  controllers: [
+    SavingsController,
+    WaitlistController,
+    GroupSavingsController,
+    SavingsGoalSharingController,
+  ],
   providers: [
     SavingsService,
     PredictiveEvaluatorService,
@@ -61,7 +72,13 @@ import { AutoDepositService } from './services/auto-deposit.service';
     ExperimentsService,
     GroupSavingsService,
     AutoDepositService,
+    SavingsGoalSharingService,
   ],
-  exports: [SavingsService, WaitlistService, ExperimentsService],
+  exports: [
+    SavingsService,
+    WaitlistService,
+    ExperimentsService,
+    SavingsGoalSharingService,
+  ],
 })
 export class SavingsModule {}

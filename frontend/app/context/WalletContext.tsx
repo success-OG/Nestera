@@ -50,6 +50,8 @@ interface WalletContextValue extends WalletState {
   disconnect: () => void;
   reconnect: () => Promise<void>;
   fetchBalances: () => Promise<void>;
+  optimisticUpdateBalance: (assetCode: string, newBalance: string) => void;
+  rollbackBalance: (assetCode: string, originalBalance: string) => void;
 }
 
 const WalletContext = createContext<WalletContextValue | null>(null);
@@ -381,8 +383,40 @@ const refreshInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     setState({ ...INITIAL_STATE, connectionStatus: "idle" });
   }, []);
 
+  const optimisticUpdateBalance = useCallback((assetCode: string, newBalance: string) => {
+    setState((s) => {
+      const updatedBalances = s.balances.map((b) =>
+        b.asset_code === assetCode
+          ? { ...b, balance: newBalance }
+          : b
+      );
+      const totalUsd = updatedBalances.reduce((acc, b) => acc + b.usd_value, 0);
+      return {
+        ...s,
+        balances: updatedBalances,
+        totalUsdValue: totalUsd,
+      };
+    });
+  }, []);
+
+  const rollbackBalance = useCallback((assetCode: string, originalBalance: string) => {
+    setState((s) => {
+      const rolledBackBalances = s.balances.map((b) =>
+        b.asset_code === assetCode
+          ? { ...b, balance: originalBalance }
+          : b
+      );
+      const totalUsd = rolledBackBalances.reduce((acc, b) => acc + b.usd_value, 0);
+      return {
+        ...s,
+        balances: rolledBackBalances,
+        totalUsdValue: totalUsd,
+      };
+    });
+  }, []);
+
   return (
-    <WalletContext.Provider value={{ ...state, connect, disconnect, reconnect, fetchBalances }}>
+    <WalletContext.Provider value={{ ...state, connect, disconnect, reconnect, fetchBalances, optimisticUpdateBalance, rollbackBalance }}>
       {children}
     </WalletContext.Provider>
   );

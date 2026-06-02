@@ -89,6 +89,32 @@ export default function ProfilePage() {
   const [editingName, setEditingName] = useState(false);
   const [displayName, setDisplayName] = useState(MOCK_USER.displayName);
   const [tempName, setTempName] = useState(MOCK_USER.displayName);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Optimistic update for display name
+  const handleNameSave = async () => {
+    const previousName = displayName;
+    
+    // Optimistically update
+    setDisplayName(tempName);
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      // Simulate API call - replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await api.updateProfile({ displayName: tempName });
+      
+      setEditingName(false);
+      setIsSaving(false);
+    } catch (err) {
+      // Rollback on error
+      setDisplayName(previousName);
+      setError("Failed to update display name");
+      setIsSaving(false);
+    }
+  };
 
   const cardBase =
     'rounded-2xl border border-white/[0.08] bg-[linear-gradient(180deg,rgba(4,20,22,0.85),rgba(6,18,20,0.75))] p-6 backdrop-blur-sm shadow-[0_10px_30px_rgba(2,12,14,0.6)]';
@@ -118,8 +144,8 @@ export default function ProfilePage() {
                   autoFocus
                   value={tempName}
                   onChange={(e) => setTempName(e.target.value)}
-                  onBlur={() => { setDisplayName(tempName); setEditingName(false); }}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { setDisplayName(tempName); setEditingName(false); } }}
+                  onBlur={handleNameSave}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { handleNameSave(); } }}
                   className="text-lg font-bold text-white bg-transparent border-b border-cyan-500 outline-none w-full"
                 />
               ) : (
@@ -128,7 +154,7 @@ export default function ProfilePage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => { setTempName(displayName); setEditingName(true); }}
+                    onClick={() => { setTempName(displayName); setEditingName(true); setError(null); }}
                     className="text-[#4a8090] hover:text-cyan-400 bg-transparent p-0.5"
                     aria-label="Edit name"
                   >
@@ -137,6 +163,11 @@ export default function ProfilePage() {
                 </>
               )}
             </div>
+            {error && (
+              <p role="alert" className="text-xs text-red-500 mb-2">
+                {error}
+              </p>
+            )}
 
             <div className="text-xs text-[#6e9aaa] mb-3">{MOCK_USER.username}</div>
 

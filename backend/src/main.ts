@@ -6,6 +6,7 @@ import {
   VersioningType,
   BadRequestException,
 } from '@nestjs/common';
+import compression from 'compression';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
@@ -49,6 +50,13 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
   const configService = app.get(ConfigService);
   const port = configService.get<number>('port');
+
+  app.use(
+    compression({
+      threshold: 1024,
+      brotli: { enabled: true },
+    }),
+  );
 
    app.setGlobalPrefix('api');
    app.enableVersioning({

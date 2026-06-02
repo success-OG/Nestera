@@ -49,16 +49,47 @@ const FILTERS: { label: string; value: NotifType | "all" }[] = [
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL);
   const [filter, setFilter] = useState<NotifType | "all">("all");
+  const [error, setError] = useState<string | null>(null);
 
   const unread = notifications.filter((n) => !n.read).length;
 
-  const markAllRead = () =>
+  // Optimistic update for marking all as read
+  const markAllRead = async () => {
+    const previousNotifications = [...notifications];
+    
+    // Optimistically update
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
 
-  const markRead = (id: number) =>
+    try {
+      // Simulate API call - replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // await api.markAllNotificationsAsRead();
+    } catch (err) {
+      // Rollback on error
+      setNotifications(previousNotifications);
+      setError("Failed to mark all notifications as read");
+    }
+  };
+
+  // Optimistic update for marking single notification as read
+  const markRead = async (id: number) => {
+    const previousNotifications = [...notifications];
+    
+    // Optimistically update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+
+    try {
+      // Simulate API call - replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      // await api.markNotificationAsRead(id);
+    } catch (err) {
+      // Rollback on error
+      setNotifications(previousNotifications);
+      setError("Failed to mark notification as read");
+    }
+  };
 
   const visible = filter === "all" ? notifications : notifications.filter((n) => n.type === filter);
 
@@ -107,6 +138,9 @@ export default function NotificationsPage() {
 
       {/* List */}
       <div className="flex flex-col gap-3">
+        {error && (
+          <p role="alert" className="text-xs text-red-500 text-center">{error}</p>
+        )}
         {visible.length === 0 && (
           <p className="text-[#5e8c96] text-sm py-8 text-center">No notifications in this category.</p>
         )}

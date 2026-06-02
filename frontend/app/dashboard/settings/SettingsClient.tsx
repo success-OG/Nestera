@@ -16,25 +16,64 @@ type Prefs = {
 
 export default function SettingsClient() {
   const t = useTranslations("Settings");
+  const [optimisticPrefs, setOptimisticPrefs] = React.useState<Prefs>({
+    emailNotifications: false,
+    inAppNotifications: false,
+    sweepNotifications: false,
+    claimNotifications: false,
+    yieldNotifications: false,
+    milestoneNotifications: false,
+  });
+  const [error, setError] = React.useState<string | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+
   const {
     register,
     handleSubmit,
     formState: { isSubmitting, isSubmitSuccessful },
   } = useForm<Prefs>({
-    defaultValues: {
-      emailNotifications: false,
-      inAppNotifications: false,
-      sweepNotifications: false,
-      claimNotifications: false,
-      yieldNotifications: false,
-      milestoneNotifications: false,
-    },
+    defaultValues: optimisticPrefs,
   });
 
-  const onSubmit = (data: Prefs) => {
-    console.log("Settings submitted:", data);
-    // Here you would typically send the data to your backend
-    // For now, we'll just log it
+  const onSubmit = async (data: Prefs) => {
+    // Store previous state for rollback
+    const previousPrefs = { ...optimisticPrefs };
+    
+    // Optimistically update UI
+    setOptimisticPrefs(data);
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      // Simulate API call - replace with actual API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // await api.updateSettings(data);
+      
+      setIsSaving(false);
+    } catch (err) {
+      // Rollback on error
+      setOptimisticPrefs(previousPrefs);
+      setError("Failed to save settings. Please try again.");
+      setIsSaving(false);
+    }
+  };
+
+  const handleCheckboxChange = (field: keyof Prefs) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.checked;
+    // Optimistically update
+    setOptimisticPrefs(prev => ({ ...prev, [field]: newValue }));
+    
+    // Trigger API call
+    const previousValue = optimisticPrefs[field];
+    setTimeout(async () => {
+      try {
+        // await api.updateSetting(field, newValue);
+      } catch (err) {
+        // Rollback on error
+        setOptimisticPrefs(prev => ({ ...prev, [field]: previousValue }));
+        setError(`Failed to update ${field}`);
+      }
+    }, 0);
   };
 
   return (
@@ -67,7 +106,8 @@ export default function SettingsClient() {
             </div>
             <input
               type="checkbox"
-              {...register("emailNotifications")}
+              checked={optimisticPrefs.emailNotifications}
+              onChange={handleCheckboxChange("emailNotifications")}
             />
           </label>
 
@@ -80,7 +120,8 @@ export default function SettingsClient() {
             </div>
             <input
               type="checkbox"
-              {...register("inAppNotifications")}
+              checked={optimisticPrefs.inAppNotifications}
+              onChange={handleCheckboxChange("inAppNotifications")}
             />
           </label>
 
@@ -95,7 +136,8 @@ export default function SettingsClient() {
             </div>
             <input
               type="checkbox"
-              {...register("sweepNotifications")}
+              checked={optimisticPrefs.sweepNotifications}
+              onChange={handleCheckboxChange("sweepNotifications")}
             />
           </label>
 
@@ -110,7 +152,8 @@ export default function SettingsClient() {
             </div>
             <input
               type="checkbox"
-              {...register("claimNotifications")}
+              checked={optimisticPrefs.claimNotifications}
+              onChange={handleCheckboxChange("claimNotifications")}
             />
           </label>
 
@@ -125,7 +168,8 @@ export default function SettingsClient() {
             </div>
             <input
               type="checkbox"
-              {...register("yieldNotifications")}
+              checked={optimisticPrefs.yieldNotifications}
+              onChange={handleCheckboxChange("yieldNotifications")}
             />
           </label>
 
@@ -140,7 +184,8 @@ export default function SettingsClient() {
             </div>
             <input
               type="checkbox"
-              {...register("milestoneNotifications")}
+              checked={optimisticPrefs.milestoneNotifications}
+              onChange={handleCheckboxChange("milestoneNotifications")}
             />
           </label>
 
@@ -148,11 +193,17 @@ export default function SettingsClient() {
             <button
               type="submit"
               className="px-4 py-2 rounded bg-[#06b6b6] text-black font-semibold disabled:opacity-50"
-              disabled={isSubmitting}
+              disabled={isSaving}
             >
-              {isSubmitting ? t("saving") : t("save")}
+              {isSaving ? t("saving") : t("save")}
             </button>
           </div>
+          
+          {error && (
+            <p role="alert" className="mt-4 text-xs text-red-500 text-center">
+              {error}
+            </p>
+          )}
           
           {isSubmitSuccessful && (
             <p id="settings-success" role="status" className="mt-4 text-xs text-green-500 text-center">

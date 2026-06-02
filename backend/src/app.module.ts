@@ -48,11 +48,13 @@ import { ConnectionPoolModule } from './common/database/connection-pool.module';
 import { CircuitBreakerModule } from './common/circuit-breaker/circuit-breaker.module';
 import { PostmanModule } from './common/postman/postman.module';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
+import { CompressionMetricsMiddleware } from './common/middleware/compression.middleware';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { GracefulShutdownService } from './common/services/graceful-shutdown.service';
 import { ApmModule } from './modules/apm/apm.module';
 import { PerformanceModule } from './modules/performance/performance.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
+import { StatisticsModule } from './modules/statistics/statistics.module';
 
 const envValidationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
@@ -310,6 +312,7 @@ const envValidationSchema = Joi.object({
     DisputesModule,
     AdminAnalyticsModule,
     AnalyticsModule,
+    StatisticsModule,
     SavingsModule,
     GovernanceModule,
     NotificationsModule,
@@ -375,6 +378,8 @@ const envValidationSchema = Joi.object({
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(CorrelationIdMiddleware).forRoutes('*');
+    consumer
+      .apply(CorrelationIdMiddleware, CompressionMetricsMiddleware)
+      .forRoutes('*');
   }
 }
