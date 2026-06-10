@@ -4,7 +4,7 @@ import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { UserNotificationsController } from './user-notifications.controller';
 import { Notification } from './entities/notification.entity';
-import { NotificationPreference } from './entities/notification-preference.entity';
+import { UserPreference } from './entities/notification-preference.entity';
 import { PendingNotification } from './entities/pending-notification.entity';
 import { WaitlistEntry } from '../savings/entities/waitlist-entry.entity';
 import { WaitlistEvent } from '../savings/entities/waitlist-event.entity';
@@ -22,7 +22,7 @@ import { SavingsModule } from '../savings/savings.module';
   imports: [
     TypeOrmModule.forFeature([
       Notification,
-      NotificationPreference,
+      UserPreference,
       PendingNotification,
       User,
       WaitlistEntry,

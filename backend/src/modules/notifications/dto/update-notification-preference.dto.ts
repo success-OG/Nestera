@@ -4,12 +4,17 @@ import {
   IsEnum,
   IsString,
   Matches,
-  ValidateIf,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { DigestFrequency } from '../entities/notification-preference.entity';
+import {
+  DigestFrequency,
+  ProfileVisibility,
+  ThemePreference,
+  DateFormatPreference,
+  PreferredContactChannel,
+} from '../entities/notification-preference.entity';
 
-export class UpdateNotificationPreferenceDto {
+export class UpdateUserPreferenceDto {
   // Channel preferences
   @ApiPropertyOptional()
   @IsOptional()
@@ -30,6 +35,11 @@ export class UpdateNotificationPreferenceDto {
   @IsOptional()
   @IsBoolean()
   smsNotifications?: boolean;
+
+  @ApiPropertyOptional({ enum: PreferredContactChannel })
+  @IsOptional()
+  @IsEnum(PreferredContactChannel)
+  preferredContactChannel?: PreferredContactChannel;
 
   // Notification type preferences
   @ApiPropertyOptional()
@@ -57,7 +67,6 @@ export class UpdateNotificationPreferenceDto {
   @IsBoolean()
   marketingNotifications?: boolean;
 
-  // Legacy
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
@@ -77,6 +86,69 @@ export class UpdateNotificationPreferenceDto {
   @IsOptional()
   @IsBoolean()
   milestoneNotifications?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  newsletterSubscribed?: boolean;
+
+  // Privacy preferences
+  @ApiPropertyOptional({ enum: ProfileVisibility })
+  @IsOptional()
+  @IsEnum(ProfileVisibility)
+  profileVisibility?: ProfileVisibility;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  dataSharingEnabled?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  personalizedAds?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  locationSharing?: boolean;
+
+  // Display preferences
+  @ApiPropertyOptional({ enum: ThemePreference })
+  @IsOptional()
+  @IsEnum(ThemePreference)
+  theme?: ThemePreference;
+
+  @ApiPropertyOptional({ example: 'en' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z]{2}(-[A-Z]{2})?$/, {
+    message: 'language must be a valid locale code',
+  })
+  language?: string;
+
+  @ApiPropertyOptional({ example: 'USD' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Z]{3}$/, {
+    message: 'currency must be a 3-letter ISO code',
+  })
+  currency?: string;
+
+  @ApiPropertyOptional({ enum: DateFormatPreference })
+  @IsOptional()
+  @IsEnum(DateFormatPreference)
+  dateFormat?: DateFormatPreference;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  compactLayout?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  displayBalancesInFiat?: boolean;
 
   // Quiet hours
   @ApiPropertyOptional()

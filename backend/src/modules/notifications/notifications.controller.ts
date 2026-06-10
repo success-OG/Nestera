@@ -1,7 +1,9 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -13,7 +15,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagg
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { NotificationsService } from './notifications.service';
-import { UpdateNotificationPreferenceDto } from './dto/update-notification-preference.dto';
+import { UpdateUserPreferenceDto } from './dto/update-notification-preference.dto';
 import { User } from '../user/entities/user.entity';
 import { PageOptionsDto } from '../../common/dto/page-options.dto';
 import { PageDto } from '../../common/dto/page.dto';
@@ -64,18 +66,34 @@ export class NotificationsController {
     return await this.notificationsService.getOrCreatePreferences(user.id);
   }
 
+  @Post('preferences')
+  @ApiOperation({ summary: 'Create or restore user preference settings' })
+  async createPreferences(@CurrentUser() user: User) {
+    return await this.notificationsService.createPreferences(user.id);
+  }
+
   @Patch('preferences')
   @ApiOperation({
     summary:
-      'Update notification preferences (channels, types, quiet hours, digest)',
+      'Update user preferences (notifications, privacy, display, channels, quiet hours, digest)',
   })
   async updatePreferences(
     @CurrentUser() user: User,
-    @Body() updateDto: UpdateNotificationPreferenceDto,
+    @Body() updateDto: UpdateUserPreferenceDto,
   ) {
     return await this.notificationsService.updatePreferences(
       user.id,
       updateDto,
     );
+  }
+
+  @Delete('preferences')
+  @ApiOperation({ summary: 'Reset user preferences to defaults' })
+  async deletePreferences(@CurrentUser() user: User) {
+    await this.notificationsService.deletePreferences(user.id);
+    return {
+      message:
+        'Preferences deleted. Defaults will be recreated on next retrieval.',
+    };
   }
 }

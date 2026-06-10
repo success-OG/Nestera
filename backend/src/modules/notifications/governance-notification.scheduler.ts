@@ -6,7 +6,7 @@ import { NotificationsService } from './notifications.service';
 import { NotificationType } from './entities/notification.entity';
 import { PendingNotification } from './entities/pending-notification.entity';
 import {
-  NotificationPreference,
+  UserPreference,
   DigestFrequency,
 } from './entities/notification-preference.entity';
 import { User } from '../user/entities/user.entity';
@@ -29,8 +29,8 @@ export class GovernanceNotificationScheduler {
     private readonly stellarService: StellarService,
     @InjectRepository(PendingNotification)
     private readonly pendingRepo: Repository<PendingNotification>,
-    @InjectRepository(NotificationPreference)
-    private readonly preferenceRepo: Repository<NotificationPreference>,
+    @InjectRepository(UserPreference)
+    private readonly preferenceRepo: Repository<UserPreference>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @InjectRepository(GovernanceProposal)

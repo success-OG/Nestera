@@ -7,7 +7,7 @@ import { StellarService } from '../blockchain/stellar.service';
 import { PendingNotification } from './entities/pending-notification.entity';
 import { NotificationType } from './entities/notification.entity';
 import {
-  NotificationPreference,
+  UserPreference,
   DigestFrequency,
 } from './entities/notification-preference.entity';
 import { User } from '../user/entities/user.entity';
@@ -57,7 +57,7 @@ describe('GovernanceNotificationScheduler', () => {
           useValue: pendingRepo,
         },
         {
-          provide: getRepositoryToken(NotificationPreference),
+          provide: getRepositoryToken(UserPreference),
           useValue: preferenceRepo,
         },
         { provide: getRepositoryToken(User), useValue: userRepo },
