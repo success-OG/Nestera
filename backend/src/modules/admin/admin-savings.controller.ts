@@ -1,12 +1,8 @@
 import {
   Controller,
   Get,
-  Post,
-  Patch,
   Body,
-  Controller,
   Delete,
-  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -20,6 +16,7 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiQuery,
+  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -28,7 +25,10 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/role.enum';
 import { ExperimentsService } from '../savings/experiments.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { ProductCapacitySnapshot } from '../savings/savings.service';
+import {
+  ProductCapacitySnapshot,
+  SavingsService,
+} from '../savings/savings.service';
 import { PageOptionsDto } from '../../common/dto/page-options.dto';
 import { CreateProductDto } from '../savings/dto/create-product.dto';
 import { UpdateProductDto } from '../savings/dto/update-product.dto';
@@ -43,8 +43,8 @@ export class AdminSavingsController {
   constructor(
     private readonly savingsService: SavingsService,
     private readonly experimentsService: ExperimentsService,
+    private readonly adminSavingsService: AdminSavingsService,
   ) {}
-  constructor(private readonly adminSavingsService: AdminSavingsService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -107,6 +107,8 @@ export class AdminSavingsController {
       body.amount,
       true,
     );
+  }
+
   @Post('experiments')
   @ApiOperation({ summary: 'Create a savings product experiment (admin)' })
   @ApiResponse({ status: 201, description: 'Experiment created' })
@@ -168,6 +170,8 @@ export class AdminSavingsController {
     @Param('id') id: string,
   ): Promise<Record<string, unknown>> {
     return await this.experimentsService.getDashboard(id);
+  }
+
   @Post('products/:id/migrations')
   @ApiOperation({
     summary: 'Migrate active subscriptions to another product version (admin)',
@@ -192,6 +196,8 @@ export class AdminSavingsController {
       migratedCount: result.migratedCount,
       targetProductId: result.targetProduct.id,
     };
+  }
+
   @Get('products/:id/capacity-metrics')
   @ApiOperation({ summary: 'Get live capacity utilization metrics (admin)' })
   @ApiResponse({

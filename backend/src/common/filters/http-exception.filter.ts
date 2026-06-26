@@ -84,6 +84,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return response.status(httpStatus).json({
         success: false,
         statusCode: httpStatus,
+        correlationId:
+          (request as Request & { correlationId?: string }).correlationId,
         errorCode: isTimeout ? 'SOROBAN_RPC_TIMEOUT' : 'SOROBAN_RPC_EXHAUSTED',
         timestamp: new Date().toISOString(),
         path: request.url,
@@ -105,6 +107,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return response.status(statusCode).json({
         success: false,
         statusCode,
+        correlationId:
+          (request as Request & { correlationId?: string }).correlationId,
         errorCode: 'DB_CONNECTION_ERROR',
         timestamp: new Date().toISOString(),
         path: request.url,
@@ -120,6 +124,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
     let message: string;
+    let errors: any[] = [];
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
       if (typeof exceptionResponse === 'string') {
@@ -128,10 +133,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
         typeof exceptionResponse === 'object' &&
         exceptionResponse !== null
       ) {
-        const msg = (exceptionResponse as Record<string, unknown>).message;
+        const responseData = exceptionResponse as Record<string, unknown>;
+        const msg = responseData.message;
         message = Array.isArray(msg)
           ? msg.join('; ')
           : String(msg ?? 'An error occurred');
+
+        if (Array.isArray(responseData.errors)) {
+          errors = responseData.errors;
+        }
       } else {
         message = 'An error occurred';
       }
@@ -139,9 +149,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = status >= 500 ? 'Internal server error' : 'An error occurred';
     }
 
-    const errorResponse = {
+    const errorResponse: Record<string, unknown> = {
       success: false,
       statusCode: status,
+      correlationId:
+        (request as Request & { correlationId?: string }).correlationId ??
+        (request.headers['x-correlation-id'] as string) ??
+        undefined,
       timestamp: new Date().toISOString(),
       path: request.url,
       message:
@@ -149,6 +163,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ? (message as { message?: string }).message
           : message,
     };
+
+    if (errors.length > 0) {
+      errorResponse.errors = errors;
+    }
 
     if (status >= 500) {
       this.logger.error(

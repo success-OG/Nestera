@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import * as request from 'supertest';
+import request from 'supertest';
 import { ReferralsModule } from './referrals.module';
 import { UserModule } from '../user/user.module';
 import { AuthModule } from '../../auth/auth.module';
@@ -19,6 +20,10 @@ describe('Referrals Integration Tests', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          load: [() => ({ jwt: { secret: 'test-secret-key' } })],
+        }),
         TypeOrmModule.forRoot({
           type: 'postgres',
           host: process.env.DB_HOST || 'localhost',
@@ -29,6 +34,9 @@ describe('Referrals Integration Tests', () => {
           entities: [User, Referral, ReferralCampaign],
           synchronize: true,
           dropSchema: true,
+          // Fail fast instead of retrying when DB is unavailable
+          retryAttempts: 1,
+          retryDelay: 500,
         }),
         EventEmitterModule.forRoot(),
         ReferralsModule,
@@ -40,11 +48,13 @@ describe('Referrals Integration Tests', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
     await app.init();
-  });
+  }, 30000); // 30s timeout for app bootstrap + DB connection
 
   afterAll(async () => {
-    await app.close();
-  });
+    if (app) {
+      await app.close();
+    }
+  }, 10000);
 
   describe('User Flow', () => {
     it('should register a user', async () => {
@@ -134,8 +144,6 @@ describe('Referrals Integration Tests', () => {
 
   describe('Admin Flow', () => {
     it('should register an admin user', async () => {
-      // This assumes you have a way to create admin users
-      // You might need to adjust this based on your auth setup
       const response = await request(app.getHttpServer())
         .post('/auth/register')
         .send({
@@ -231,9 +239,7 @@ describe('Referrals Integration Tests', () => {
     });
 
     it('should require authentication for referral endpoints', async () => {
-      await request(app.getHttpServer())
-        .get('/referrals/stats')
-        .expect(401);
+      await request(app.getHttpServer()).get('/referrals/stats').expect(401);
 
       await request(app.getHttpServer())
         .post('/referrals/generate')

@@ -17,7 +17,7 @@ export class StorageService {
     }
   }
 
-  async saveFile(file: Express.Multer.File): Promise<string> {
+  async saveFile(file: any): Promise<string> {
     try {
       const fileExtension = extname(file.originalname);
       const fileName = `${randomUUID()}${fileExtension}`;

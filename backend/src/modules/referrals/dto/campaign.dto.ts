@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, IsDateString, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsDateString,
+  Min,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCampaignDto {
@@ -22,7 +29,10 @@ export class CreateCampaignDto {
   @Min(0)
   refereeRewardAmount?: number;
 
-  @ApiPropertyOptional({ description: 'Minimum deposit amount to qualify', default: 0 })
+  @ApiPropertyOptional({
+    description: 'Minimum deposit amount to qualify',
+    default: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

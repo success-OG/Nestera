@@ -1,29 +1,41 @@
 'use client';
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 
 const productLinks = [
-  { label: 'Flexible Savings', href: '#' },
-  { label: 'Locked Savings', href: '#' },
-  { label: 'Goal Fund', href: '#' },
-  { label: 'Group Savings', href: '#' },
+  { key: 'flexibleSavings', href: '#' },
+  { key: 'lockedSavings', href: '#' },
+  { key: 'goalFund', href: '#' },
+  { key: 'groupSavings', href: '#' },
 ];
 
 const companyLinks = [
-  { label: 'About', href: '#' },
-  { label: 'Blog', href: '#' },
-  { label: 'Careers', href: '#' },
-  { label: 'Press', href: '#' },
+  { key: 'about', href: '#' },
+  { key: 'blog', href: '#' },
+  { key: 'careers', href: '#' },
+  { key: 'press', href: '#' },
 ];
 
 const communityLinks = [
-  { label: 'Discord', href: '#' },
-  { label: 'Twitter', href: '#' },
-  { label: 'GitHub', href: '#' },
-  { label: 'Docs', href: '#' },
+  { key: 'discord', href: '#' },
+  { key: 'twitter', href: '#' },
+  { key: 'github', href: '#' },
+  { key: 'docs', href: '#' },
 ];
 
+/**
+ * Application footer component.
+ * Contains product links, company information, community links, and social media icons.
+ * 
+ * @example
+ * ```tsx
+ * <Footer />
+ * ```
+ */
 const Footer: React.FC = () => {
+  const t = useTranslations('Footer');
+
   return (
     <footer
       className="relative w-full bg-[#061a1a] font-['Inter',sans-serif] pt-16 px-12 pb-8 max-md:py-12 max-md:px-6 max-md:pb-6 max-[480px]:pt-10 max-[480px]:px-5 max-[480px]:pb-5"
@@ -56,23 +68,23 @@ const Footer: React.FC = () => {
               <span className="leading-none">Nestera</span>
             </a>
             <p className="text-sm font-normal leading-relaxed text-[rgba(180,210,210,0.75)] max-w-[280px] max-md:max-w-full">
-              Empowering global savings through decentralized technology.
+              {t('tagline')}
             </p>
           </div>
 
           <nav className="flex flex-wrap gap-12 max-md:flex-col max-md:gap-7" aria-label="Footer navigation">
             <div className="min-w-[120px] max-md:min-w-0">
               <h3 className="text-[0.85rem] font-bold text-white normal-case tracking-normal mb-4 leading-tight">
-                Product
+                {t('product')}
               </h3>
               <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
                 {productLinks.map((item) => (
-                  <li key={item.label}>
+                  <li key={item.key}>
                     <a
                       href={item.href}
                       className="text-sm font-normal text-[rgba(180,210,210,0.8)] no-underline transition-colors duration-200 hover:text-[#00d4c0] focus-visible:outline-2 focus-visible:outline-[#00d4c0] focus-visible:outline-offset-2 rounded-sm"
                     >
-                      {item.label}
+                      {t(`productLinks.${item.key}`)}
                     </a>
                   </li>
                 ))}
@@ -80,16 +92,16 @@ const Footer: React.FC = () => {
             </div>
             <div className="min-w-[120px] max-md:min-w-0">
               <h3 className="text-[0.85rem] font-bold text-white normal-case tracking-normal mb-4 leading-tight">
-                Company
+                {t('company')}
               </h3>
               <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
                 {companyLinks.map((item) => (
-                  <li key={item.label}>
+                  <li key={item.key}>
                     <a
                       href={item.href}
                       className="text-sm font-normal text-[rgba(180,210,210,0.8)] no-underline transition-colors duration-200 hover:text-[#00d4c0] focus-visible:outline-2 focus-visible:outline-[#00d4c0] focus-visible:outline-offset-2 rounded-sm"
                     >
-                      {item.label}
+                      {t(`companyLinks.${item.key}`)}
                     </a>
                   </li>
                 ))}
@@ -97,16 +109,16 @@ const Footer: React.FC = () => {
             </div>
             <div className="min-w-[120px] max-md:min-w-0">
               <h3 className="text-[0.85rem] font-bold text-white normal-case tracking-normal mb-4 leading-tight">
-                Community
+                {t('community')}
               </h3>
               <ul className="list-none p-0 m-0 flex flex-col gap-2.5">
                 {communityLinks.map((item) => (
-                  <li key={item.label}>
+                  <li key={item.key}>
                     <a
                       href={item.href}
                       className="text-sm font-normal text-[rgba(180,210,210,0.8)] no-underline transition-colors duration-200 hover:text-[#00d4c0] focus-visible:outline-2 focus-visible:outline-[#00d4c0] focus-visible:outline-offset-2 rounded-sm"
                     >
-                      {item.label}
+                      {t(`communityLinks.${item.key}`)}
                     </a>
                   </li>
                 ))}
@@ -124,7 +136,7 @@ const Footer: React.FC = () => {
         <div className="flex flex-wrap items-center justify-between gap-4 max-md:flex-col max-md:items-start">
           <div className="flex flex-wrap items-center gap-6 max-md:flex-col max-md:items-start max-md:gap-4">
             <p className="text-xs font-normal text-[rgba(180,210,210,0.65)] m-0">
-              © 2025 Nestera. All rights reserved.
+              {t('copyright')}
             </p>
             <div className="flex items-center gap-4">
               <a

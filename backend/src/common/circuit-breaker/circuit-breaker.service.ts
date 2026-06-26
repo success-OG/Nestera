@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CircuitBreaker, CircuitBreakerMetrics } from './circuit-breaker.config';
+import {
+  CircuitBreaker,
+  CircuitBreakerMetrics,
+} from './circuit-breaker.config';
 
 @Injectable()
 export class CircuitBreakerService {
@@ -58,7 +61,9 @@ export class CircuitBreakerService {
     );
   }
 
-  getMetrics(breakerName?: string): CircuitBreakerMetrics | Map<string, CircuitBreakerMetrics> {
+  getMetrics(
+    breakerName?: string,
+  ): CircuitBreakerMetrics | Map<string, CircuitBreakerMetrics> | null {
     if (breakerName) {
       const breaker = this.breakers.get(breakerName);
       return breaker ? breaker.getMetrics() : null;

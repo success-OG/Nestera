@@ -4,8 +4,8 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { Observable, of } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, of, from } from 'rxjs';
+import { tap, switchMap } from 'rxjs/operators';
 import { CacheStrategyService } from '../../modules/cache/cache-strategy.service';
 
 @Injectable()
@@ -23,16 +23,18 @@ export class CacheInterceptor implements NestInterceptor {
 
     const cacheKey = `${url}:${JSON.stringify(query)}`;
 
-    return this.cacheStrategy.get(cacheKey).then((cached) => {
-      if (cached) {
-        return of(cached);
-      }
+    return from(this.cacheStrategy.get(cacheKey)).pipe(
+      switchMap((cached) => {
+        if (cached) {
+          return of(cached);
+        }
 
-      return next.handle().pipe(
-        tap((data) => {
-          this.cacheStrategy.set(cacheKey, data);
-        }),
-      );
-    });
+        return next.handle().pipe(
+          tap((data) => {
+            this.cacheStrategy.set(cacheKey, data);
+          }),
+        );
+      }),
+    );
   }
 }

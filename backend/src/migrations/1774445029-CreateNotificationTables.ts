@@ -28,6 +28,7 @@ export class CreateNotificationTables1774445029 implements MigrationInterface {
               'CLAIM_REJECTED',
               'YIELD_EARNED',
               'DEPOSIT_RECEIVED',
+              'MILESTONE_ACHIEVED',
             ],
             isNullable: false,
           },

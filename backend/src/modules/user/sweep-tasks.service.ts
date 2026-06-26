@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from './entities/user.entity';
 import { StellarService } from '../blockchain/stellar.service';
+import { ShutdownTrackedTask } from '../../common/decorators/shutdown-task.decorator';
 
 @Injectable()
 export class SweepTasksService {
@@ -21,6 +22,7 @@ export class SweepTasksService {
    * Cron job that runs every hour to check and execute account sweeps
    * Schedule: Every hour at minute 0
    */
+  @ShutdownTrackedTask()
   @Cron(CronExpression.EVERY_HOUR)
   async handleAccountSweep() {
     this.logger.log('Starting account sweep job...');

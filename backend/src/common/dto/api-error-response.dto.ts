@@ -1,35 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { StandardErrorResponseDto } from './standard-error-response.dto';
 
-export class ApiErrorResponseDto {
-  @ApiProperty({
-    example: 400,
-    description: 'HTTP status code',
-  })
-  statusCode: number;
-
+export class ApiErrorResponseDto extends StandardErrorResponseDto {
   @ApiProperty({
     example: 'Bad Request',
-    description: 'Error message',
+    description: 'Error type (deprecated, use errorCode instead)',
+    required: false,
   })
-  message: string;
-
-  @ApiProperty({
-    example: 'BadRequestException',
-    description: 'Error type',
-  })
-  error: string;
-
-  @ApiProperty({
-    example: '2026-03-30T04:57:29.140Z',
-    description: 'Timestamp of the error',
-  })
-  timestamp: string;
-
-  @ApiProperty({
-    example: '/api/v2/savings/goals',
-    description: 'Request path',
-  })
-  path?: string;
+  error?: string;
 }
 
 export class ValidationErrorDto extends ApiErrorResponseDto {
@@ -37,12 +15,19 @@ export class ValidationErrorDto extends ApiErrorResponseDto {
     example: [
       {
         field: 'goalName',
-        message: 'Goal name is required',
+        value: '',
+        constraints: {
+          isNotEmpty: 'goalName should not be empty',
+        },
       },
     ],
     description: 'Validation errors',
   })
-  errors?: Array<{ field: string; message: string }>;
+  declare errors?: Array<{
+    field: string;
+    value?: unknown;
+    constraints: Record<string, string>;
+  }>;
 }
 
 export class UnauthorizedErrorDto extends ApiErrorResponseDto {
@@ -53,10 +38,16 @@ export class UnauthorizedErrorDto extends ApiErrorResponseDto {
   statusCode = 401;
 
   @ApiProperty({
-    example: 'Unauthorized',
+    example: 'AUTH_001',
+    description: 'Error code',
+  })
+  errorCode = 'AUTH_001';
+
+  @ApiProperty({
+    example: 'Authentication required. Please provide valid credentials.',
     description: 'Error message',
   })
-  message = 'Unauthorized';
+  message = 'Authentication required. Please provide valid credentials.';
 }
 
 export class ForbiddenErrorDto extends ApiErrorResponseDto {
@@ -67,10 +58,16 @@ export class ForbiddenErrorDto extends ApiErrorResponseDto {
   statusCode = 403;
 
   @ApiProperty({
-    example: 'Forbidden',
+    example: 'AUTHZ_001',
+    description: 'Error code',
+  })
+  errorCode = 'AUTHZ_001';
+
+  @ApiProperty({
+    example: 'You do not have permission to access this resource.',
     description: 'Error message',
   })
-  message = 'Forbidden';
+  message = 'You do not have permission to access this resource.';
 }
 
 export class NotFoundErrorDto extends ApiErrorResponseDto {
@@ -81,8 +78,14 @@ export class NotFoundErrorDto extends ApiErrorResponseDto {
   statusCode = 404;
 
   @ApiProperty({
-    example: 'Not Found',
+    example: 'SYS_404',
+    description: 'Error code',
+  })
+  errorCode = 'SYS_404';
+
+  @ApiProperty({
+    example: 'The requested resource was not found.',
     description: 'Error message',
   })
-  message = 'Not Found';
+  message = 'The requested resource was not found.';
 }

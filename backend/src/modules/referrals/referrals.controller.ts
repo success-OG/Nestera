@@ -8,7 +8,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ReferralsService } from './referrals.service';
 import {
@@ -26,11 +31,11 @@ export class ReferralsController {
 
   @Post('generate')
   @ApiOperation({ summary: 'Generate a referral code for the current user' })
-  @ApiResponse({ status: 201, description: 'Referral code generated successfully' })
-  async generateReferralCode(
-    @Request() req,
-    @Body() dto: CreateReferralDto,
-  ) {
+  @ApiResponse({
+    status: 201,
+    description: 'Referral code generated successfully',
+  })
+  async generateReferralCode(@Request() req, @Body() dto: CreateReferralDto) {
     const referral = await this.referralsService.generateReferralCode(
       req.user.userId,
       dto.campaignId,
@@ -53,8 +58,10 @@ export class ReferralsController {
   @ApiOperation({ summary: 'Get list of users referred by current user' })
   @ApiResponse({ status: 200, type: [ReferralResponseDto] })
   async getMyReferrals(@Request() req) {
-    const referrals = await this.referralsService.getUserReferrals(req.user.userId);
-    
+    const referrals = await this.referralsService.getUserReferrals(
+      req.user.userId,
+    );
+
     return referrals.map((r) => ({
       id: r.id,
       referralCode: r.referralCode,
@@ -69,7 +76,9 @@ export class ReferralsController {
 
   @Post('check-completion')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Internal: Check if referral should be completed after deposit' })
+  @ApiOperation({
+    summary: 'Internal: Check if referral should be completed after deposit',
+  })
   async checkReferralCompletion(
     @Body() body: { userId: string; depositAmount: string },
   ) {

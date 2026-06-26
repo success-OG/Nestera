@@ -10,6 +10,7 @@ import { User } from '../user/entities/user.entity';
 import { CreateAlertDto } from './dto/create-alert.dto';
 import { AlertHistory } from './entities/alert-history.entity';
 import { AlertType, ProductAlert } from './entities/product-alert.entity';
+import { ShutdownTrackedTask } from '../../common/decorators/shutdown-task.decorator';
 
 @Injectable()
 export class AlertsService {
@@ -101,6 +102,7 @@ export class AlertsService {
   }
 
   // Periodic condition evaluator for product alerts.
+  @ShutdownTrackedTask()
   @Cron(CronExpression.EVERY_10_MINUTES)
   async evaluateAlerts() {
     const now = new Date();

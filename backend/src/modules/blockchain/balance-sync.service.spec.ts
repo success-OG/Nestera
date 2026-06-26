@@ -9,8 +9,10 @@ import { ProtocolMetrics } from '../admin-analytics/entities/protocol-metrics.en
 
 // Requirements: 1.2, 1.4
 
-const MOCK_PUBLIC_KEY_A = 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN';
-const MOCK_PUBLIC_KEY_B = 'GBCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC';
+const MOCK_PUBLIC_KEY_A =
+  'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN';
+const MOCK_PUBLIC_KEY_B =
+  'GBCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC';
 
 function buildConfigValues(): Record<string, unknown> {
   return {
@@ -34,7 +36,9 @@ function buildHorizonServerMock(streamFn: jest.Mock) {
     accounts: jest.fn().mockReturnValue({
       accountId: jest.fn().mockReturnValue({
         stream: streamFn,
-        call: jest.fn().mockResolvedValue({ account_id: MOCK_PUBLIC_KEY_A, balances: [] }),
+        call: jest
+          .fn()
+          .mockResolvedValue({ account_id: MOCK_PUBLIC_KEY_A, balances: [] }),
       }),
     }),
   };
@@ -164,10 +168,24 @@ describe('BalanceSyncService', () => {
         providers: [
           BalanceSyncService,
           { provide: ConfigService, useValue: mockConfigService },
-          { provide: CACHE_MANAGER, useValue: { get: jest.fn().mockResolvedValue(null), set: jest.fn() } },
+          {
+            provide: CACHE_MANAGER,
+            useValue: {
+              get: jest.fn().mockResolvedValue(null),
+              set: jest.fn(),
+            },
+          },
           { provide: EventEmitter2, useValue: { emit: jest.fn() } },
-          { provide: StellarService, useValue: { getHorizonServer: jest.fn().mockReturnValue(horizonServerMock) } },
-          { provide: getRepositoryToken(ProtocolMetrics), useValue: { findOne: jest.fn(), save: jest.fn() } },
+          {
+            provide: StellarService,
+            useValue: {
+              getHorizonServer: jest.fn().mockReturnValue(horizonServerMock),
+            },
+          },
+          {
+            provide: getRepositoryToken(ProtocolMetrics),
+            useValue: { findOne: jest.fn(), save: jest.fn() },
+          },
         ],
       }).compile();
 

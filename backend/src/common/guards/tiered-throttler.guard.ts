@@ -33,26 +33,31 @@ const TIER_LIMITS: Record<
     default: { limit: 60, ttl: 60000 },
     auth: { limit: 5, ttl: 15 * 60 * 1000 },
     rpc: { limit: 5, ttl: 60000 },
+    export: { limit: 1, ttl: 15 * 60 * 1000 },
   },
   [UserTier.VERIFIED]: {
     default: { limit: 150, ttl: 60000 },
     auth: { limit: 10, ttl: 15 * 60 * 1000 },
     rpc: { limit: 15, ttl: 60000 },
+    export: { limit: 3, ttl: 15 * 60 * 1000 },
   },
   [UserTier.PREMIUM]: {
     default: { limit: 300, ttl: 60000 },
     auth: { limit: 15, ttl: 15 * 60 * 1000 },
     rpc: { limit: 30, ttl: 60000 },
+    export: { limit: 4, ttl: 15 * 60 * 1000 },
   },
   [UserTier.ENTERPRISE]: {
     default: { limit: 1000, ttl: 60000 },
     auth: { limit: 30, ttl: 15 * 60 * 1000 },
     rpc: { limit: 100, ttl: 60000 },
+    export: { limit: 8, ttl: 15 * 60 * 1000 },
   },
   [UserTier.ADMIN]: {
     default: { limit: 1000, ttl: 60000 },
     auth: { limit: 50, ttl: 15 * 60 * 1000 },
     rpc: { limit: 100, ttl: 60000 },
+    export: { limit: 6, ttl: 15 * 60 * 1000 },
   },
 };
 

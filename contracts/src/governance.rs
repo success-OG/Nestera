@@ -36,7 +36,7 @@ pub fn get_proposal_votes(env: &Env, proposal_id: u64) -> (u128, u128, u128) {
 }
 use crate::errors::SavingsError;
 use crate::governance_events::*;
-use crate::rewards::storage::get_user_rewards;
+
 use crate::storage_types::DataKey;
 use soroban_sdk::{contracttype, Address, Env, String, Vec};
 

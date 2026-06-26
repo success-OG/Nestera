@@ -36,10 +36,6 @@ import { WithdrawalRequest } from '../savings/entities/withdrawal-request.entity
 import { AuditLog } from '../../common/entities/audit-log.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
 import { Dispute, DisputeTimeline } from '../disputes/entities/dispute.entity';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { AuditLog } from '../../common/entities/audit-log.entity';
-import { Notification } from '../notifications/entities/notification.entity';
 
 @Module({
   imports: [
@@ -79,7 +75,7 @@ import { Notification } from '../notifications/entities/notification.entity';
     AdminAuditLogsService,
     AdminNotificationsService,
     AdminTransactionsService,
-    AdminWithdrawalService
+    AdminWithdrawalService,
   ],
   exports: [AdminDisputesService, AdminAuditLogsService],
 })

@@ -60,8 +60,14 @@ pub fn create_lock_save(
     // Update user's profile stats
     let user_key = DataKey::User(user.clone());
     let mut user_data: User = env.storage().persistent().get(&user_key).unwrap();
-    user_data.total_balance += amount;
-    user_data.savings_count += 1;
+    user_data.total_balance = user_data
+        .total_balance
+        .checked_add(amount)
+        .ok_or(SavingsError::Overflow)?;
+    user_data.savings_count = user_data
+        .savings_count
+        .checked_add(1)
+        .ok_or(SavingsError::Overflow)?;
     env.storage().persistent().set(&user_key, &user_data);
 
     storage::award_deposit_points(env, user.clone(), amount)?;
@@ -71,6 +77,12 @@ pub fn create_lock_save(
     ttl::extend_lock_ttl(env, lock_id);
     ttl::extend_user_ttl(env, &user);
     ttl::extend_user_plan_list_ttl(env, &DataKey::UserLockSaves(user.clone()));
+
+    // Emit lock-created event: (user, amount, maturity_time, lock_id)
+    env.events().publish(
+        (symbol_short!("lock_new"), user, lock_id),
+        (amount, maturity_time),
+    );
 
     Ok(lock_id)
 }
@@ -103,7 +115,10 @@ pub fn withdraw_lock_save(env: &Env, user: Address, lock_id: u64) -> Result<i128
     // Update user's total balance (subtracting the locked portion)
     let user_key = DataKey::User(user.clone());
     if let Some(mut user_data) = env.storage().persistent().get::<DataKey, User>(&user_key) {
-        user_data.total_balance -= lock_save.amount;
+        user_data.total_balance = user_data
+            .total_balance
+            .checked_sub(lock_save.amount)
+            .ok_or(SavingsError::Underflow)?;
         env.storage().persistent().set(&user_key, &user_data);
     }
 
@@ -363,5 +378,77 @@ mod tests {
         let rewards = client.get_user_rewards(&user);
         // base points = 1000 * 10 = 10000, bonus = 2000
         assert_eq!(rewards.total_points, 12_000);
+    }
+
+    // ========== Overflow / Underflow Protection Tests (#877) ==========
+
+    #[test]
+    fn test_create_lock_save_rejects_zero_amount() {
+        let (env, client, _) = setup_env_with_rewards();
+        let user = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&user);
+
+        let result = client.try_create_lock_save(&user, &0i128, &3600u64);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_lock_save_rejects_negative_amount() {
+        let (env, client, _) = setup_env_with_rewards();
+        let user = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&user);
+
+        let result = client.try_create_lock_save(&user, &(-1i128), &3600u64);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_lock_save_rejects_zero_duration() {
+        let (env, client, _) = setup_env_with_rewards();
+        let user = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&user);
+
+        let result = client.try_create_lock_save(&user, &1000i128, &0u64);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_withdraw_lock_save_underflow_not_possible() {
+        // Withdrawing a non-existent lock should panic/error, not silently underflow
+        let (env, client, _) = setup_env_with_rewards();
+        let user = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&user);
+
+        // Try to withdraw lock 9999 (does not exist) – must error
+        client.withdraw_lock_save(&user, &9999u64);
+    }
+
+    #[test]
+    fn test_total_balance_correctly_updated_on_create_and_withdraw() {
+        let (env, client, _) = setup_env_with_rewards();
+        let user = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&user);
+
+        let amount = 5_000i128;
+        let duration = LONG_LOCK_BONUS_THRESHOLD_SECS + 1;
+        let lock_id = client.create_lock_save(&user, &amount, &duration);
+
+        let user_data = client.get_user(&user);
+        assert_eq!(user_data.total_balance, amount);
+
+        env.ledger().with_mut(|li| {
+            li.timestamp = li.timestamp + duration + 1;
+        });
+
+        client.withdraw_lock_save(&user, &lock_id);
+
+        let user_data_after = client.get_user(&user);
+        assert_eq!(user_data_after.total_balance, 0);
     }
 }

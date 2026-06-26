@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { MailService } from '../mail/mail.service';
 import { BackupService } from './backup.service';
 import { BackupStatus } from './entities/backup-record.entity';
+import { ShutdownTrackedTask } from '../../common/decorators/shutdown-task.decorator';
 
 const MAX_BACKUP_AGE_HOURS = 26; // alert if no successful backup in 26h
 
@@ -16,6 +17,7 @@ export class BackupMonitorService {
   ) {}
 
   // Check every hour
+  @ShutdownTrackedTask()
   @Cron(CronExpression.EVERY_HOUR)
   async checkBackupFreshness(): Promise<void> {
     const latest = await this.backupService.getLastSuccessful();
@@ -40,6 +42,7 @@ export class BackupMonitorService {
   }
 
   // Check for failed backups — runs 30 min after the daily backup window
+  @ShutdownTrackedTask()
   @Cron('30 2 * * *')
   async checkLastBackupResult(): Promise<void> {
     const records = await this.backupService.getRecentBackups(1);

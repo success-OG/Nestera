@@ -13,16 +13,41 @@ export enum DigestFrequency {
   WEEKLY = 'weekly',
 }
 
+export enum ProfileVisibility {
+  PUBLIC = 'PUBLIC',
+  PRIVATE = 'PRIVATE',
+  FRIENDS_ONLY = 'FRIENDS_ONLY',
+}
+
+export enum ThemePreference {
+  LIGHT = 'LIGHT',
+  DARK = 'DARK',
+  SYSTEM = 'SYSTEM',
+}
+
+export enum DateFormatPreference {
+  MM_DD_YYYY = 'MM/DD/YYYY',
+  DD_MM_YYYY = 'DD/MM/YYYY',
+  YYYY_MM_DD = 'YYYY-MM-DD',
+}
+
+export enum PreferredContactChannel {
+  EMAIL = 'EMAIL',
+  SMS = 'SMS',
+  PUSH = 'PUSH',
+  IN_APP = 'IN_APP',
+}
+
 @Entity('notification_preferences')
 @Unique(['userId'])
-export class NotificationPreference {
+export class UserPreference {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column('uuid')
   userId: string;
 
-  // ── Channel preferences ──────────────────────────────────────────────────
+  // ── Communication channel preferences ────────────────────────────────────
   @Column({ type: 'boolean', default: true })
   emailNotifications: boolean;
 
@@ -34,6 +59,13 @@ export class NotificationPreference {
 
   @Column({ type: 'boolean', default: false })
   smsNotifications: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: PreferredContactChannel,
+    default: PreferredContactChannel.EMAIL,
+  })
+  preferredContactChannel: PreferredContactChannel;
 
   // ── Notification type preferences ────────────────────────────────────────
   @Column({ type: 'boolean', default: true })
@@ -48,10 +80,12 @@ export class NotificationPreference {
   @Column({ type: 'boolean', default: true })
   governanceNotifications: boolean;
 
+  @Column({ type: 'boolean', default: true })
+  badgeNotifications: boolean;
+
   @Column({ type: 'boolean', default: false })
   marketingNotifications: boolean;
 
-  // Legacy columns kept for backward compatibility
   @Column({ type: 'boolean', default: true })
   sweepNotifications: boolean;
 
@@ -63,6 +97,53 @@ export class NotificationPreference {
 
   @Column({ type: 'boolean', default: true })
   milestoneNotifications: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  newsletterSubscribed: boolean;
+
+  // ── Privacy preferences ──────────────────────────────────────────────────
+  @Column({
+    type: 'enum',
+    enum: ProfileVisibility,
+    default: ProfileVisibility.PRIVATE,
+  })
+  profileVisibility: ProfileVisibility;
+
+  @Column({ type: 'boolean', default: false })
+  dataSharingEnabled: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  personalizedAds: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  locationSharing: boolean;
+
+  // ── Display preferences ──────────────────────────────────────────────────
+  @Column({
+    type: 'enum',
+    enum: ThemePreference,
+    default: ThemePreference.SYSTEM,
+  })
+  theme: ThemePreference;
+
+  @Column({ type: 'varchar', length: 10, default: 'en' })
+  language: string;
+
+  @Column({ type: 'varchar', length: 3, default: 'USD' })
+  currency: string;
+
+  @Column({
+    type: 'enum',
+    enum: DateFormatPreference,
+    default: DateFormatPreference.MM_DD_YYYY,
+  })
+  dateFormat: DateFormatPreference;
+
+  @Column({ type: 'boolean', default: false })
+  compactLayout: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  displayBalancesInFiat: boolean;
 
   // ── Quiet hours ──────────────────────────────────────────────────────────
   @Column({ type: 'boolean', default: false })

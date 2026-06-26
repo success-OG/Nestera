@@ -85,6 +85,10 @@ pub fn flexi_deposit(env: Env, user: Address, amount: i128) -> Result<(), Saving
         crate::treasury::record_fee(&env, fee_amount, soroban_sdk::Symbol::new(&env, "deposit"));
     }
 
+    // Emit deposit event
+    env.events()
+        .publish((symbol_short!("flexi_dep"), user), net_amount);
+
     Ok(())
 }
 
@@ -169,6 +173,10 @@ pub fn flexi_withdraw(env: Env, user: Address, amount: i128) -> Result<(), Savin
         // Record fee in treasury struct
         crate::treasury::record_fee(&env, fee_amount, soroban_sdk::Symbol::new(&env, "withdraw"));
     }
+
+    // Emit withdrawal event
+    env.events()
+        .publish((symbol_short!("flexi_wth"), user), amount);
 
     Ok(())
 }

@@ -8,7 +8,7 @@ export default function DashboardPage() {
   return (
     <div className="w-full max-w-full overflow-x-hidden">
       {/* Top row: NetWorth (stretches) + QuickActions (fixed width) */}
-      <div className="flex gap-4 md:gap-[18px] items-start flex-col md:flex-row">
+      <div className="animate-stagger flex gap-4 md:gap-[18px] items-start flex-col md:flex-row">
         <div className="flex-1 w-full min-w-0">
           <NetWorthCard />
         </div>
@@ -18,7 +18,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Second row: ActivePoolList + RecentTransactions */}
-      <div className="mt-4 md:mt-5 flex gap-4 md:gap-5 flex-col lg:flex-row">
+      <div className="mt-4 md:mt-5 animate-stagger flex gap-4 md:gap-5 flex-col lg:flex-row">
         <div className="flex-1 w-full min-w-0">
           <ActivePoolList />
         </div>

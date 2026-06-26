@@ -11,7 +11,10 @@ import { AnalyticsOverviewDto } from './dto/analytics-overview.dto';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/role.enum';
-import { DateRangeFilterDto, DateRange } from '../admin/dto/admin-analytics.dto';
+import {
+  DateRangeFilterDto,
+  DateRange,
+} from '../admin/dto/admin-analytics.dto';
 
 @ApiTags('admin/analytics')
 @Controller('admin/analytics')
@@ -49,10 +52,18 @@ export class AdminAnalyticsController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user growth, retention, churn metrics' })
-  @ApiQuery({ name: 'range', required: false, enum: ['7d', '30d', '90d', '365d', 'custom'] })
+  @ApiQuery({
+    name: 'range',
+    required: false,
+    enum: ['7d', '30d', '90d', '365d', 'custom'],
+  })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
-  @ApiQuery({ name: 'compareTo', required: false, enum: ['previous_period', 'same_period_last_year'] })
+  @ApiQuery({
+    name: 'compareTo',
+    required: false,
+    enum: ['previous_period', 'same_period_last_year'],
+  })
   @ApiResponse({ status: 200, description: 'User analytics' })
   async getUserAnalytics(@Query() filter: DateRangeFilterDto) {
     return await this.analyticsService.getUserAnalytics(filter);
@@ -62,7 +73,11 @@ export class AdminAnalyticsController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get fee collection and projections' })
-  @ApiQuery({ name: 'range', required: false, enum: ['7d', '30d', '90d', '365d', 'custom'] })
+  @ApiQuery({
+    name: 'range',
+    required: false,
+    enum: ['7d', '30d', '90d', '365d', 'custom'],
+  })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Revenue analytics' })
@@ -74,7 +89,11 @@ export class AdminAnalyticsController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get TVL, APY distribution, product performance' })
-  @ApiQuery({ name: 'range', required: false, enum: ['7d', '30d', '90d', '365d', 'custom'] })
+  @ApiQuery({
+    name: 'range',
+    required: false,
+    enum: ['7d', '30d', '90d', '365d', 'custom'],
+  })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Savings analytics' })
@@ -86,7 +105,11 @@ export class AdminAnalyticsController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get transaction volume trends' })
-  @ApiQuery({ name: 'range', required: false, enum: ['7d', '30d', '90d', '365d', 'custom'] })
+  @ApiQuery({
+    name: 'range',
+    required: false,
+    enum: ['7d', '30d', '90d', '365d', 'custom'],
+  })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
   @ApiResponse({ status: 200, description: 'Transaction analytics' })

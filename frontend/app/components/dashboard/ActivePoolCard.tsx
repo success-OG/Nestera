@@ -15,7 +15,7 @@ const ActivePoolCard: React.FC<{ pool: PoolItem }> = ({ pool }) => {
   const initials = pool.title.split(" ")[0].slice(0, 2).toUpperCase();
 
   return (
-    <div className="flex items-center gap-4 p-3.5 bg-[rgba(3,12,14,0.12)] rounded-xl border border-white/2">
+    <div className="card-hover flex items-center gap-4 p-3.5 bg-[rgba(3,12,14,0.12)] rounded-xl border border-white/2">
       <div className="flex items-center gap-3 min-w-[200px]">
         <div className="w-11 h-11 rounded-[10px] bg-linear-to-b from-[#063d3d] to-[#0a6f6f] flex items-center justify-center font-bold text-[#dff] shrink-0">
           {initials}

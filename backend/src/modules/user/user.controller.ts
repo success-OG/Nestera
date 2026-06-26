@@ -18,7 +18,10 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -38,7 +41,7 @@ class ImageTypeValidator extends FileValidator {
     super({});
   }
 
-  isValid(file: Express.Multer.File): boolean {
+  isValid(file: any): boolean {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     return allowedTypes.includes(file.mimetype);
   }
@@ -53,7 +56,7 @@ class KycDocumentValidator extends FileValidator {
     super({});
   }
 
-  isValid(file: Express.Multer.File): boolean {
+  isValid(file: any): boolean {
     const allowedTypes = ['application/pdf', 'image/jpeg'];
     return allowedTypes.includes(file.mimetype);
   }
@@ -112,6 +115,8 @@ export class UserController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get basic info for the authenticated user' })
+  @ApiResponse({ status: 200, description: 'User info returned' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   getMe(@CurrentUser() user: { id: string }) {
     return this.userService.findById(user.id);
   }
@@ -127,6 +132,10 @@ export class UserController {
     description: 'Net worth breakdown',
     type: NetWorthDto,
   })
+      'Returns wallet balance, savings (flexible + locked), total, and percentage breakdown. ' +
+      'Requires a linked Stellar wallet; returns zero balances if no wallet is linked.',
+  })
+  @ApiResponse({ status: 200, description: 'Net worth data', type: NetWorthDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getNetWorth(@CurrentUser() user: { id: string }): Promise<NetWorthDto> {
     const userEntity = await this.userService.findById(user.id);
@@ -175,6 +184,10 @@ export class UserController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by ID' })
   @ApiResponse({ status: 200, description: 'User found' })
+  @ApiOperation({ summary: 'Get a user by ID (admin / internal use)' })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'User record' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   findOne(@Param('id') id: string) {
     return this.userService.findById(id);
@@ -183,6 +196,9 @@ export class UserController {
   @Patch('me')
   @ApiOperation({ summary: 'Update the authenticated user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated' })
+  @ApiBody({ type: UpdateUserDto })
+  @ApiResponse({ status: 200, description: 'Profile updated' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   updateMe(@CurrentUser() user: { id: string }, @Body() dto: UpdateUserDto) {
     return this.userService.update(user.id, dto);
@@ -200,6 +216,20 @@ export class UserController {
   @ApiOperation({ summary: 'Upload a profile avatar image' })
   @ApiResponse({ status: 201, description: 'Avatar uploaded' })
   @ApiResponse({ status: 400, description: 'Invalid file type or size' })
+  @ApiOperation({
+    summary: 'Upload a profile avatar image',
+    description: 'Accepts JPEG, PNG, or WebP up to 5 MB.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Avatar uploaded, URL returned' })
+  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(
     @CurrentUser() user: { id: string },
@@ -211,7 +241,7 @@ export class UserController {
         ],
       }),
     )
-    file: Express.Multer.File,
+    file: any,
   ) {
     const avatarUrl = await this.storageService.saveFile(file);
     return this.userService.updateAvatar(user.id, avatarUrl);
@@ -221,6 +251,20 @@ export class UserController {
   @ApiOperation({ summary: 'Upload a KYC verification document' })
   @ApiResponse({ status: 201, description: 'Document uploaded' })
   @ApiResponse({ status: 400, description: 'Invalid file type or size' })
+  @ApiOperation({
+    summary: 'Upload a KYC document',
+    description: 'Accepts PDF or JPEG up to 10 MB. Triggers KYC review process.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { document: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'KYC document uploaded' })
+  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseInterceptors(FileInterceptor('document'))
   async uploadKycDocument(
     @CurrentUser() user: { id: string },
@@ -232,7 +276,7 @@ export class UserController {
         ],
       }),
     )
-    file: Express.Multer.File,
+    file: any,
   ) {
     const kycDocumentUrl = await this.storageService.saveFile(file);
     return this.userService.updateKycDocument(user.id, kycDocumentUrl);

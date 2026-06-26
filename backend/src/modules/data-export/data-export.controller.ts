@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Body,
+  Query,
   UseGuards,
   Res,
   HttpCode,
@@ -14,6 +15,7 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiResponse,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import * as path from 'path';
@@ -50,11 +52,60 @@ export class DataExportController {
   }
 
   @Get('export/download/:token')
-  @ApiOperation({ summary: 'Download export ZIP by token (token acts as auth)' })
+  @ApiOperation({ summary: 'Download export ZIP by token' })
   async download(@Param('token') token: string, @Res() res: Response) {
     const { filePath } = await this.dataExportService.getExportFile(token);
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="nestera-data-export.zip"');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="nestera-data-export.zip"',
+    );
     res.sendFile(path.resolve(filePath));
+  }
+
+  // ─── Typed export endpoints ───────────────────────────────────────────────
+
+  @Get('export/transactions')
+  @ApiOperation({ summary: 'Export transaction history as JSON' })
+  @ApiQuery({ name: 'from', required: false, description: 'ISO date YYYY-MM-DD' })
+  @ApiQuery({ name: 'to', required: false, description: 'ISO date YYYY-MM-DD' })
+  exportTransactions(
+    @CurrentUser() user: { id: string },
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.dataExportService.exportTransactions(user.id, from, to);
+  }
+
+  @Get('export/goals')
+  @ApiOperation({ summary: 'Export savings goals as JSON' })
+  exportGoals(@CurrentUser() user: { id: string }) {
+    return this.dataExportService.exportGoals(user.id);
+  }
+
+  @Get('export/portfolio')
+  @ApiOperation({ summary: 'Export portfolio summary as JSON' })
+  exportPortfolio(@CurrentUser() user: { id: string }) {
+    return this.dataExportService.exportPortfolio(user.id);
+  }
+
+  @Get('export/analytics')
+  @ApiOperation({ summary: 'Export analytics data as JSON' })
+  @ApiQuery({ name: 'from', required: false })
+  @ApiQuery({ name: 'to', required: false })
+  exportAnalytics(
+    @CurrentUser() user: { id: string },
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.dataExportService.exportAnalytics(user.id, from, to);
+  }
+
+  // ─── Export history ───────────────────────────────────────────────────────
+
+  @Get('export/history')
+  @ApiOperation({ summary: 'List all past export requests for the current user' })
+  exportHistory(@CurrentUser() user: { id: string }) {
+    return this.dataExportService.getExportHistory(user.id);
   }
 }

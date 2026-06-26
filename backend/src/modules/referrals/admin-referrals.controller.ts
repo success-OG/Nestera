@@ -9,17 +9,19 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/role.enum';
 import { ReferralsService } from './referrals.service';
 import { CampaignsService } from './campaigns.service';
-import {
-  CreateCampaignDto,
-  UpdateCampaignDto,
-} from './dto/campaign.dto';
+import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 import { UpdateReferralStatusDto } from './dto/referral.dto';
 import { ReferralStatus } from './entities/referral.entity';
 
@@ -100,7 +102,9 @@ export class AdminReferralsController {
   }
 
   @Post(':id/distribute-rewards')
-  @ApiOperation({ summary: 'Manually trigger reward distribution for a referral' })
+  @ApiOperation({
+    summary: 'Manually trigger reward distribution for a referral',
+  })
   async distributeRewards(@Param('id') id: string) {
     await this.referralsService.distributeRewards(id);
     return { message: 'Rewards distributed successfully' };
@@ -111,13 +115,21 @@ export class AdminReferralsController {
   async getReferralAnalytics() {
     // This could be expanded with more detailed analytics
     const allReferrals = await this.referralsService.getAllReferrals();
-    
+
     const analytics = {
       totalReferrals: allReferrals.length,
-      pendingReferrals: allReferrals.filter((r) => r.status === ReferralStatus.PENDING).length,
-      completedReferrals: allReferrals.filter((r) => r.status === ReferralStatus.COMPLETED).length,
-      rewardedReferrals: allReferrals.filter((r) => r.status === ReferralStatus.REWARDED).length,
-      fraudulentReferrals: allReferrals.filter((r) => r.status === ReferralStatus.FRAUDULENT).length,
+      pendingReferrals: allReferrals.filter(
+        (r) => r.status === ReferralStatus.PENDING,
+      ).length,
+      completedReferrals: allReferrals.filter(
+        (r) => r.status === ReferralStatus.COMPLETED,
+      ).length,
+      rewardedReferrals: allReferrals.filter(
+        (r) => r.status === ReferralStatus.REWARDED,
+      ).length,
+      fraudulentReferrals: allReferrals.filter(
+        (r) => r.status === ReferralStatus.FRAUDULENT,
+      ).length,
       totalRewardsDistributed: allReferrals
         .filter((r) => r.status === ReferralStatus.REWARDED && r.rewardAmount)
         .reduce((sum, r) => sum + parseFloat(r.rewardAmount!), 0)

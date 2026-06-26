@@ -12,6 +12,7 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
 import { BackupRecord, BackupStatus } from './entities/backup-record.entity';
 import { BackupService } from './backup.service';
+import { ShutdownTrackedTask } from '../../common/decorators/shutdown-task.decorator';
 
 const execAsync = promisify(exec);
 
@@ -46,6 +47,7 @@ export class BackupRestoreTestService {
   }
 
   // First Sunday of every month at 04:00 UTC
+  @ShutdownTrackedTask()
   @Cron('0 4 1-7 * 0')
   async runMonthlyRestoreTest(): Promise<void> {
     this.logger.log('Starting monthly restore test...');

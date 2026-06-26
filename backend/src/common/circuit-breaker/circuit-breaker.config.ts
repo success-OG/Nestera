@@ -46,10 +46,7 @@ export class CircuitBreaker {
       'CIRCUIT_BREAKER_SUCCESS_THRESHOLD',
       2,
     );
-    this.timeout = configService.get<number>(
-      'CIRCUIT_BREAKER_TIMEOUT',
-      60000,
-    );
+    this.timeout = configService.get<number>('CIRCUIT_BREAKER_TIMEOUT', 60000);
     this.halfOpenRequests = configService.get<number>(
       'CIRCUIT_BREAKER_HALF_OPEN_REQUESTS',
       3,

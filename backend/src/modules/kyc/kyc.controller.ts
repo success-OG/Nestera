@@ -3,13 +3,23 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -22,12 +32,21 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Role } from '../../common/enums/role.enum';
 import { InitiateKycDto } from './dto/initiate-kyc.dto';
 import { KycWebhookDto } from './dto/kyc-webhook.dto';
+import {
+  UploadKycDocumentDto,
+  ReviewKycDocumentDto,
+} from './dto/kyc-document.dto';
 import { KycService } from './kyc.service';
+import { KycDocumentService } from './kyc-document.service';
+import { KycDocument } from './entities/kyc-document.entity';
 
 @ApiTags('kyc')
 @Controller()
 export class KycController {
-  constructor(private readonly kycService: KycService) {}
+  constructor(
+    private readonly kycService: KycService,
+    private readonly kycDocumentService: KycDocumentService,
+  ) {}
 
   @Post('user/kyc/initiate')
   @UseGuards(JwtAuthGuard)
@@ -36,6 +55,57 @@ export class KycController {
   @ApiResponse({ status: 201, description: 'KYC initiated' })
   initiate(@CurrentUser() user: { id: string }, @Body() dto: InitiateKycDto) {
     return this.kycService.initiateVerification(user.id, dto);
+  }
+
+  @Post('user/kyc/documents')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['documentType', 'document'],
+      properties: {
+        documentType: {
+          type: 'string',
+          enum: [
+            'PASSPORT',
+            'NATIONAL_ID',
+            'DRIVERS_LICENSE',
+            'UTILITY_BILL',
+            'SELFIE',
+          ],
+        },
+        document: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiOperation({ summary: 'Upload a KYC document with encryption at rest' })
+  @UseInterceptors(FileInterceptor('document'))
+  async uploadDocument(
+    @CurrentUser() user: { id: string },
+    @Body() dto: UploadKycDocumentDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 })],
+      }),
+    )
+    file: any,
+  ): Promise<KycDocument> {
+    return this.kycDocumentService.uploadDocument(
+      user.id,
+      dto.documentType,
+      file,
+    );
+  }
+
+  @Get('user/kyc/documents')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List current user KYC documents' })
+  getMyDocuments(@CurrentUser() user: { id: string }) {
+    return this.kycDocumentService.listUserDocuments(user.id);
   }
 
   @Post('webhooks/kyc/status')
@@ -51,6 +121,37 @@ export class KycController {
   @ApiOperation({ summary: 'List current user KYC verification records' })
   getMyVerifications(@CurrentUser() user: { id: string }) {
     return this.kycService.listUserVerifications(user.id);
+  }
+
+  @Get('admin/kyc/documents/pending')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin: list documents pending review' })
+  listPendingDocuments() {
+    return this.kycDocumentService.listPendingReview();
+  }
+
+  @Get('admin/kyc/documents/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin: get KYC document details' })
+  getDocument(@Param('id') id: string) {
+    return this.kycDocumentService.getDocument(id);
+  }
+
+  @Patch('admin/kyc/documents/:id/review')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Admin: approve or reject a KYC document' })
+  reviewDocument(
+    @Param('id') id: string,
+    @CurrentUser() admin: { id: string },
+    @Body() dto: ReviewKycDocumentDto,
+  ) {
+    return this.kycDocumentService.reviewDocument(id, admin.id, dto);
   }
 
   @Get('admin/kyc/reports')

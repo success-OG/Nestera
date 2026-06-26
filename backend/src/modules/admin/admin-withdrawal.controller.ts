@@ -48,7 +48,10 @@ export class AdminWithdrawalController {
 
   @Get('pending')
   @ApiOperation({ summary: 'List pending withdrawal requests' })
-  @ApiResponse({ status: 200, description: 'Paginated list of pending withdrawals' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of pending withdrawals',
+  })
   async listPending(@Query() opts: PageOptionsDto) {
     return this.adminWithdrawalService.listPending(opts);
   }
@@ -64,7 +67,10 @@ export class AdminWithdrawalController {
   @Post(':id/approve')
   @ApiOperation({ summary: 'Approve a pending withdrawal request' })
   @ApiResponse({ status: 200, description: 'Withdrawal request approved' })
-  @ApiResponse({ status: 400, description: 'Withdrawal request is not in PENDING status' })
+  @ApiResponse({
+    status: 400,
+    description: 'Withdrawal request is not in PENDING status',
+  })
   @ApiResponse({ status: 404, description: 'Withdrawal request not found' })
   async approve(
     @Param('id', ParseUUIDPipe) id: string,
@@ -76,7 +82,11 @@ export class AdminWithdrawalController {
   @Post(':id/reject')
   @ApiOperation({ summary: 'Reject a pending withdrawal request' })
   @ApiResponse({ status: 200, description: 'Withdrawal request rejected' })
-  @ApiResponse({ status: 400, description: 'Withdrawal request is not in PENDING status or invalid reason' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Withdrawal request is not in PENDING status or invalid reason',
+  })
   @ApiResponse({ status: 404, description: 'Withdrawal request not found' })
   async reject(
     @Param('id', ParseUUIDPipe) id: string,

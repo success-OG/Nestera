@@ -1,4 +1,5 @@
 export * from './create-proposal.dto';
+export * from './edit-proposal.dto';
 export * from './cast-vote.dto';
 export * from './proposal-response.dto';
 export * from './vote-response.dto';

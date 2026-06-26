@@ -1,19 +1,39 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { Repository, SelectQueryBuilder, Brackets, IsNull } from 'typeorm';
 import { Readable } from 'stream';
 import { format as csvFormat } from '@fast-csv/format';
-import { LedgerTransaction } from '../blockchain/entities/transaction.entity';
+import {
+  LedgerTransaction,
+  LedgerTransactionStatus,
+} from '../blockchain/entities/transaction.entity';
 import { TransactionQueryDto } from './dto/transaction-query.dto';
 import { TransactionResponseDto } from './dto/transaction-response.dto';
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
+import { AutoCategorizationService } from './auto-categorization.service';
+import { TransactionSearchCriteriaDto } from './dto/transaction-search-criteria.dto';
+import { Order } from '../../common/dto/page-options.dto';
+import { TransactionSavedSearch } from './entities/transaction-saved-search.entity';
+import { CreateSavedSearchDto } from './dto/create-saved-search.dto';
+import { UpdateSavedSearchDto } from './dto/update-saved-search.dto';
+import { SavedSearchResponseDto } from './dto/saved-search-response.dto';
 
 @Injectable()
 export class TransactionsService {
+  private readonly sortableColumns = {
+    createdAt: 'transaction.createdAt',
+    amount: 'transaction.amount',
+    type: 'transaction.type',
+    status: 'transaction.status',
+  } as const;
+
   constructor(
     @InjectRepository(LedgerTransaction)
     private readonly transactionRepository: Repository<LedgerTransaction>,
+    @InjectRepository(TransactionSavedSearch)
+    private readonly savedSearchRepository: Repository<TransactionSavedSearch>,
+    private readonly autoCategorizationService: AutoCategorizationService,
   ) {}
 
   async findAllForUser(
@@ -22,12 +42,9 @@ export class TransactionsService {
   ): Promise<PageDto<TransactionResponseDto>> {
     const queryBuilder = this.buildQuery(userId, queryDto);
 
-    // Apply pagination
     queryBuilder.skip(queryDto.skip).take(queryDto.limit ?? 10);
 
     const [data, totalItemCount] = await queryBuilder.getManyAndCount();
-
-    // Transform to response DTOs with formatted dates
     const transformedData = data.map((transaction) =>
       this.transformToResponseDto(transaction),
     );
@@ -40,11 +57,19 @@ export class TransactionsService {
     return new PageDto(transformedData, meta);
   }
 
+  async exportTransactions(
+    userId: string,
+    queryDto: TransactionQueryDto,
+  ): Promise<TransactionResponseDto[]> {
+    const data = await this.buildQuery(userId, queryDto).getMany();
+    return data.map((transaction) => this.transformToResponseDto(transaction));
+  }
+
   async streamTransactionsCsv(
     userId: string,
     queryDto: TransactionQueryDto,
   ): Promise<Readable> {
-    const chunkSize = Number(queryDto.limit ?? 1000);
+    const chunkSize = Math.min(Number(queryDto.limit ?? 1000), 1000);
     let offset = 0;
 
     const csvStream = csvFormat({ headers: true, quoteColumns: true });
@@ -67,6 +92,7 @@ export class TransactionsService {
               id: dto.id,
               userId: dto.userId,
               type: dto.type,
+              status: dto.status,
               amount: dto.amount,
               amountFormatted: dto.amountFormatted?.display ?? '',
               publicKey: dto.publicKey ?? '',
@@ -85,7 +111,7 @@ export class TransactionsService {
           offset += chunkSize;
         }
       } catch (error) {
-        csvStream.destroy(error);
+        csvStream.destroy(error as Error);
       } finally {
         csvStream.end();
       }
@@ -94,22 +120,126 @@ export class TransactionsService {
     return csvStream;
   }
 
+  async createSavedSearch(
+    userId: string,
+    dto: CreateSavedSearchDto,
+  ): Promise<SavedSearchResponseDto> {
+    if (dto.isDefault) {
+      await this.clearDefaultSavedSearch(userId);
+    }
+
+    const savedSearch = this.savedSearchRepository.create({
+      userId,
+      name: dto.name.trim(),
+      description: dto.description?.trim() ?? null,
+      query: this.normalizeSearchCriteria(dto.query),
+      isDefault: dto.isDefault ?? false,
+    });
+
+    const saved = await this.savedSearchRepository.save(savedSearch);
+    return this.toSavedSearchResponse(saved);
+  }
+
+  async listSavedSearches(userId: string): Promise<SavedSearchResponseDto[]> {
+    const rows = await this.savedSearchRepository.find({
+      where: { userId },
+      order: { isDefault: 'DESC', updatedAt: 'DESC' },
+    });
+
+    return rows.map((row) => this.toSavedSearchResponse(row));
+  }
+
+  async updateSavedSearch(
+    userId: string,
+    id: string,
+    dto: UpdateSavedSearchDto,
+  ): Promise<SavedSearchResponseDto | { ok: false; message: string }> {
+    const savedSearch = await this.savedSearchRepository.findOne({
+      where: { id, userId },
+    });
+
+    if (!savedSearch) {
+      return { ok: false, message: 'Saved search not found' };
+    }
+
+    if (dto.isDefault) {
+      await this.clearDefaultSavedSearch(userId, id);
+    }
+
+    if (typeof dto.name === 'string') {
+      savedSearch.name = dto.name.trim();
+    }
+    if (dto.description !== undefined) {
+      savedSearch.description = dto.description?.trim() ?? null;
+    }
+    if (dto.query) {
+      savedSearch.query = this.normalizeSearchCriteria(dto.query);
+    }
+    if (dto.isDefault !== undefined) {
+      savedSearch.isDefault = dto.isDefault;
+    }
+
+    const updated = await this.savedSearchRepository.save(savedSearch);
+    return this.toSavedSearchResponse(updated);
+  }
+
+  async deleteSavedSearch(
+    userId: string,
+    id: string,
+  ): Promise<{ ok: boolean; message?: string }> {
+    const result = await this.savedSearchRepository.delete({ id, userId });
+    if (!result.affected) {
+      return { ok: false, message: 'Saved search not found' };
+    }
+    return { ok: true };
+  }
+
+  async runSavedSearch(
+    userId: string,
+    id: string,
+    pagination?: Pick<TransactionQueryDto, 'page' | 'limit'>,
+  ): Promise<PageDto<TransactionResponseDto> | { ok: false; message: string }> {
+    const savedSearch = await this.savedSearchRepository.findOne({
+      where: { id, userId },
+    });
+
+    if (!savedSearch) {
+      return { ok: false, message: 'Saved search not found' };
+    }
+
+    const queryDto = Object.assign(
+      new TransactionQueryDto(),
+      savedSearch.query,
+      {
+        page: pagination?.page ?? 1,
+        limit: pagination?.limit ?? 10,
+        order: (savedSearch.query.order as Order | undefined) ?? Order.DESC,
+      },
+    );
+
+    return this.findAllForUser(userId, queryDto);
+  }
+
   private buildQuery(
     userId: string,
-    queryDto: TransactionQueryDto,
+    queryDto: TransactionSearchCriteriaDto,
   ): SelectQueryBuilder<LedgerTransaction> {
     const queryBuilder = this.transactionRepository
       .createQueryBuilder('transaction')
       .where('transaction.userId = :userId', { userId });
 
-    // Filter by transaction types
-    if (queryDto.type && queryDto.type.length > 0) {
+    if (queryDto.type?.length) {
       queryBuilder.andWhere('transaction.type IN (:...types)', {
         types: queryDto.type,
       });
     }
 
-    // Filter by date range
+    if (queryDto.status?.length) {
+      queryBuilder.andWhere('transaction.status IN (:...statuses)', {
+        statuses: queryDto.status,
+      });
+    }
+
     if (queryDto.startDate) {
       queryBuilder.andWhere('transaction.createdAt >= :startDate', {
         startDate: new Date(queryDto.startDate),
@@ -122,30 +252,91 @@ export class TransactionsService {
       });
     }
 
-    // Filter by pool ID
+    if (queryDto.minAmount) {
+      queryBuilder.andWhere('transaction.amount >= :minAmount', {
+        minAmount: queryDto.minAmount,
+      });
+    }
+
+    if (queryDto.maxAmount) {
+      queryBuilder.andWhere('transaction.amount <= :maxAmount', {
+        maxAmount: queryDto.maxAmount,
+      });
+    }
+
     if (queryDto.poolId) {
       queryBuilder.andWhere('transaction.poolId = :poolId', {
         poolId: queryDto.poolId,
       });
     }
 
-    // Filter by category
     if (queryDto.category) {
       queryBuilder.andWhere('transaction.category = :category', {
         category: queryDto.category,
       });
     }
 
-    // Filter by tags (any overlap)
-    if (queryDto.tags && queryDto.tags.length > 0) {
-      // Use Postgres array overlap operator (&&)
+    if (queryDto.tags?.length) {
       queryBuilder.andWhere('transaction.tags && :tags', {
         tags: queryDto.tags,
       });
     }
 
-    // Apply ordering
-    queryBuilder.orderBy('transaction.createdAt', queryDto.order ?? 'DESC');
+    if (queryDto.search?.trim()) {
+      const searchText = queryDto.search.trim();
+      const searchLike = `%${searchText}%`;
+
+      queryBuilder.andWhere(
+        new Brackets((qb) => {
+          qb.where(
+            `to_tsvector('simple',
+              concat_ws(' ',
+                coalesce(transaction."txHash", ''),
+                coalesce(transaction."eventId", ''),
+                coalesce(transaction."publicKey", ''),
+                coalesce(transaction."poolId", ''),
+                coalesce(transaction.category, ''),
+                coalesce(transaction.status::text, ''),
+                coalesce(transaction.type::text, ''),
+                coalesce(transaction.metadata::text, ''),
+                array_to_string(transaction.tags, ' ')
+              )
+            ) @@ websearch_to_tsquery('simple', :searchText)`,
+            { searchText },
+          )
+            .orWhere('transaction.txHash ILIKE :searchLike', { searchLike })
+            .orWhere('transaction.eventId ILIKE :searchLike', { searchLike })
+            .orWhere('transaction.publicKey ILIKE :searchLike', {
+              searchLike,
+            })
+            .orWhere('transaction.poolId ILIKE :searchLike', { searchLike })
+            .orWhere('transaction.category ILIKE :searchLike', { searchLike })
+            .orWhere('transaction.status::text ILIKE :searchLike', {
+              searchLike,
+            })
+            .orWhere('transaction.type::text ILIKE :searchLike', { searchLike })
+            .orWhere('CAST(transaction.amount AS TEXT) ILIKE :searchLike', {
+              searchLike,
+            })
+            .orWhere(
+              "COALESCE(transaction.metadata::text, '') ILIKE :searchLike",
+              {
+                searchLike,
+              },
+            )
+            .orWhere(
+              `array_to_string(transaction.tags, ' ') ILIKE :searchLike`,
+              { searchLike },
+            );
+        }),
+      );
+    }
+
+    const sortBy = queryDto.sortBy ?? 'createdAt';
+    const orderByColumn =
+      this.sortableColumns[sortBy] ?? this.sortableColumns.createdAt;
+
+    queryBuilder.orderBy(orderByColumn, queryDto.order ?? Order.DESC);
 
     return queryBuilder;
   }
@@ -154,17 +345,16 @@ export class TransactionsService {
     transaction: LedgerTransaction,
   ): TransactionResponseDto {
     const createdAt = new Date(transaction.createdAt);
-
-    // Extract asset ID from metadata or use default USDC
     const assetId = this.extractAssetId(transaction);
 
     return {
       id: transaction.id,
       userId: transaction.userId,
       type: transaction.type,
+      status: transaction.status ?? LedgerTransactionStatus.COMPLETED,
       amount: transaction.amount,
       publicKey: transaction.publicKey,
-      eventId: transaction.eventId,
+      eventId: transaction.eventId ?? '',
       transactionHash: transaction.transactionHash,
       category: transaction.category ?? null,
       tags: transaction.tags ?? [],
@@ -182,7 +372,6 @@ export class TransactionsService {
         minute: '2-digit',
         second: '2-digit',
       }),
-      // Add assetId for interceptor formatting (will be enriched by interceptor)
       assetId,
     } as TransactionResponseDto;
   }
@@ -196,7 +385,6 @@ export class TransactionsService {
       return { ok: false, message: 'Transaction not found' };
     }
 
-    // Handle tags
     if (payload?.tags) {
       const current = tx.tags ?? [];
       const incoming = Array.isArray(payload.tags) ? payload.tags : [];
@@ -206,7 +394,6 @@ export class TransactionsService {
       } else if (payload.action === 'set') {
         tx.tags = incoming;
       } else {
-        // add
         const set = new Set(current.concat(incoming));
         tx.tags = Array.from(set);
       }
@@ -234,7 +421,6 @@ export class TransactionsService {
   }
 
   async bulkTag(userId: string, body: any) {
-    // Support ids-based operations for now
     if (!body?.ids || !Array.isArray(body.ids) || !body.ids.length) {
       return { ok: false, message: 'No ids provided' };
     }
@@ -242,7 +428,7 @@ export class TransactionsService {
     const txs = await this.transactionRepository.findBy({
       id: body.ids,
       userId,
-    } as any);
+    });
 
     for (const tx of txs) {
       if (body.tags) {
@@ -265,15 +451,10 @@ export class TransactionsService {
     }
 
     await this.transactionRepository.save(txs);
-
     return { ok: true, count: txs.length };
   }
 
-  /**
-   * Extract asset ID from transaction metadata or return default
-   */
   private extractAssetId(transaction: LedgerTransaction): string {
-    // Check metadata for asset information
     if (transaction.metadata?.assetId) {
       return transaction.metadata.assetId as string;
     }
@@ -282,8 +463,124 @@ export class TransactionsService {
       return transaction.metadata.contractId as string;
     }
 
-    // Check if poolId corresponds to a known asset
-    // For now, default to USDC as it's the primary asset
     return 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA';
+  }
+
+  async autoCategorizeTransaction(userId: string, transactionId: string) {
+    const tx = await this.transactionRepository.findOne({
+      where: { id: transactionId, userId },
+    });
+
+    if (!tx) {
+      return { ok: false, message: 'Transaction not found' };
+    }
+
+    const categorization = this.autoCategorizationService.categorize(tx);
+    if (categorization) {
+      tx.category = categorization.category;
+      tx.tags = Array.from(
+        new Set([...(tx.tags ?? []), ...categorization.tags]),
+      );
+      await this.transactionRepository.save(tx);
+    }
+
+    return { ok: true, transaction: this.transformToResponseDto(tx) };
+  }
+
+  async autoCategorizeAll(userId: string) {
+    const txs = await this.transactionRepository.findBy({
+      userId,
+      category: IsNull(),
+    });
+
+    let updated = 0;
+    for (const tx of txs) {
+      const categorization = this.autoCategorizationService.categorize(tx);
+      if (categorization) {
+        tx.category = categorization.category;
+        tx.tags = Array.from(
+          new Set([...(tx.tags ?? []), ...categorization.tags]),
+        );
+        updated += 1;
+      }
+    }
+
+    if (updated > 0) {
+      await this.transactionRepository.save(txs);
+    }
+
+    return { ok: true, count: updated };
+  }
+
+  async getTagAnalytics(userId: string) {
+    const tagCounts = await this.transactionRepository
+      .createQueryBuilder('transaction')
+      .select('unnest(transaction.tags)', 'tag')
+      .addSelect('COUNT(*)', 'count')
+      .where('transaction.userId = :userId', { userId })
+      .groupBy('tag')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    const categoryStats = await this.transactionRepository
+      .createQueryBuilder('transaction')
+      .select('transaction.category', 'category')
+      .addSelect('COUNT(*)', 'count')
+      .where('transaction.userId = :userId', { userId })
+      .andWhere('transaction.category IS NOT NULL')
+      .groupBy('transaction.category')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    return {
+      tags: tagCounts.map((row) => ({
+        tag: row.tag,
+        count: Number(row.count),
+      })),
+      categories: categoryStats.map((row) => ({
+        category: row.category,
+        count: Number(row.count),
+      })),
+    };
+  }
+
+  private normalizeSearchCriteria(
+    query: TransactionSearchCriteriaDto,
+  ): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(query).filter(([, value]) => value !== undefined),
+    );
+  }
+
+  private toSavedSearchResponse(
+    savedSearch: TransactionSavedSearch,
+  ): SavedSearchResponseDto {
+    return {
+      id: savedSearch.id,
+      userId: savedSearch.userId,
+      name: savedSearch.name,
+      description: savedSearch.description,
+      query: savedSearch.query,
+      isDefault: savedSearch.isDefault,
+      createdAt: savedSearch.createdAt.toISOString(),
+      updatedAt: savedSearch.updatedAt.toISOString(),
+    };
+  }
+
+  private async clearDefaultSavedSearch(
+    userId: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const query = this.savedSearchRepository
+      .createQueryBuilder()
+      .update(TransactionSavedSearch)
+      .set({ isDefault: false })
+      .where('userId = :userId', { userId });
+
+    if (excludeId) {
+      query.andWhere('id != :excludeId', { excludeId });
+    }
+
+    await query.execute();
   }
 }

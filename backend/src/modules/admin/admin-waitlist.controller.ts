@@ -93,15 +93,15 @@ export class AdminWaitlistController {
   @Get(':productId/analytics')
   async analyticsForProduct(@Param('productId') productId: string) {
     const waitlistSize = await this.waitlistRepo.count({
-      where: { productId, notifiedAt: IsNull() } as any,
+      where: { productId, notifiedAt: IsNull() },
     });
 
     const notifiedCount = await this.waitlistEventRepo.count({
-      where: { productId, type: 'NOTIFY' as any },
+      where: { productId, type: 'NOTIFY' },
     });
 
     const acceptedCount = await this.waitlistEventRepo.count({
-      where: { productId, type: 'ACCEPT' as any },
+      where: { productId, type: 'ACCEPT' },
     });
 
     // average time from NOTIFY -> ACCEPT for matching entryId

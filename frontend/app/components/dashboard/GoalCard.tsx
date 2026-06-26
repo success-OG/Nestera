@@ -62,7 +62,7 @@ export default function GoalCard({
   const statusStyle = STATUS_STYLES[status];
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-linear-to-br from-[rgba(6,26,26,0.82)] to-[rgba(4,14,16,0.6)] shadow-[0_18px_45px_rgba(0,0,0,0.32)] backdrop-blur-sm p-6">
+    <div className="card-hover relative overflow-hidden rounded-3xl border border-white/5 bg-linear-to-br from-[rgba(6,26,26,0.82)] to-[rgba(4,14,16,0.6)] shadow-[0_18px_45px_rgba(0,0,0,0.32)] backdrop-blur-sm p-6">
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/70 via-cyan-400/25 to-transparent" />
 
       <div className="flex items-start justify-between gap-3 mb-4">
@@ -111,7 +111,7 @@ export default function GoalCard({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <button className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-[#061a1a] font-bold rounded-2xl transition-all shadow-[0_10px_18px_rgba(0,212,192,0.15)] active:scale-95">
+        <button className="btn-press px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-[#061a1a] font-bold rounded-2xl shadow-[0_10px_18px_rgba(0,212,192,0.15)]">
           Contribute
         </button>
 

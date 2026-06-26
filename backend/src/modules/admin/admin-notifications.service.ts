@@ -2,10 +2,19 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Notification } from '../notifications/entities/notification.entity';
+import {
+  Notification,
+  NotificationType,
+} from '../notifications/entities/notification.entity';
 import { User } from '../user/entities/user.entity';
-import { UserSubscription, SubscriptionStatus } from '../savings/entities/user-subscription.entity';
+import {
+  UserSubscription,
+  SubscriptionStatus,
+} from '../savings/entities/user-subscription.entity';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bullmq';
 import { MailService } from '../mail/mail.service';
+import { ShutdownTrackedTask } from '../../common/decorators/shutdown-task.decorator';
 import {
   BroadcastNotificationDto,
   ScheduleNotificationDto,
@@ -29,15 +38,19 @@ export class AdminNotificationsService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(UserSubscription)
     private readonly subscriptionRepository: Repository<UserSubscription>,
+    @InjectQueue('notifications')
+    private readonly notificationQueue: Queue,
     private readonly mailService: MailService,
   ) {}
 
   /**
-   * Send broadcast notification to all users or targeted users
+   * Send broadcast notification to all users or targeted users via job queue
    */
-  async broadcastNotification(dto: BroadcastNotificationDto): Promise<NotificationDeliveryDto> {
+  async broadcastNotification(
+    dto: BroadcastNotificationDto,
+  ): Promise<NotificationDeliveryDto> {
     const targetUsers = await this.getTargetUsers(dto.target);
-    
+
     const delivery: NotificationDeliveryDto = {
       sent: 0,
       delivered: 0,
@@ -69,7 +82,11 @@ export class AdminNotificationsService {
 
         // Send email
         if (channels.includes(NotificationChannel.EMAIL) && user.email) {
-          await this.mailService.sendNotificationEmail(user.email, dto.title, dto.message);
+          await this.mailService.sendRawMail(
+            user.email,
+            dto.title,
+            dto.message,
+          );
           delivery.delivered++;
         }
 
@@ -78,23 +95,28 @@ export class AdminNotificationsService {
           // TODO: Implement push notification integration
           delivery.delivered++;
         }
-
       } catch (error) {
-        this.logger.error(`Failed to send notification to user ${user.id}: ${error.message}`);
+        this.logger.error(
+          `Failed to send notification to user ${user.id}: ${error.message}`,
+        );
         delivery.failed++;
       }
     }
 
-    this.logger.log(`Broadcast notification sent: ${delivery.sent} sent, ${delivery.delivered} delivered, ${delivery.failed} failed`);
+    this.logger.log(
+      `Broadcast notification sent: ${delivery.sent} sent, ${delivery.delivered} delivered, ${delivery.failed} failed`,
+    );
     return delivery;
   }
 
   /**
    * Schedule a notification for future delivery
    */
-  async scheduleNotification(dto: ScheduleNotificationDto): Promise<{ scheduleId: string }> {
+  async scheduleNotification(
+    dto: ScheduleNotificationDto,
+  ): Promise<{ scheduleId: string }> {
     const scheduledAt = new Date(dto.scheduledAt);
-    
+
     // Create a scheduled notification record
     const notification = this.notificationRepository.create({
       userId: 'SYSTEM', // System-wide
@@ -127,11 +149,15 @@ export class AdminNotificationsService {
     });
 
     if (!notification) {
-      throw new NotFoundException(`Scheduled notification ${scheduleId} not found`);
+      throw new NotFoundException(
+        `Scheduled notification ${scheduleId} not found`,
+      );
     }
 
     if (!notification.metadata?.scheduled) {
-      throw new NotFoundException(`Notification ${scheduleId} is not a scheduled notification`);
+      throw new NotFoundException(
+        `Notification ${scheduleId} is not a scheduled notification`,
+      );
     }
 
     await this.notificationRepository.delete(scheduleId);
@@ -173,19 +199,27 @@ export class AdminNotificationsService {
     const limit = filter.limit || 20;
     const skip = (page - 1) * limit;
 
-    const query = this.notificationRepository.createQueryBuilder('notification')
+    const query = this.notificationRepository
+      .createQueryBuilder('notification')
       .where('notification.type = :type', { type: ADMIN_BROADCAST_TYPE })
       .orderBy('notification.createdAt', 'DESC');
 
     if (filter.fromDate) {
-      query.andWhere('notification.createdAt >= :fromDate', { fromDate: filter.fromDate });
+      query.andWhere('notification.createdAt >= :fromDate', {
+        fromDate: filter.fromDate,
+      });
     }
 
     if (filter.toDate) {
-      query.andWhere('notification.createdAt <= :toDate', { toDate: filter.toDate });
+      query.andWhere('notification.createdAt <= :toDate', {
+        toDate: filter.toDate,
+      });
     }
 
-    const [notifications, total] = await query.skip(skip).take(limit).getManyAndCount();
+    const [notifications, total] = await query
+      .skip(skip)
+      .take(limit)
+      .getManyAndCount();
 
     return {
       notifications,
@@ -198,7 +232,9 @@ export class AdminNotificationsService {
   /**
    * Get delivery statistics for a notification
    */
-  async getDeliveryStats(notificationId: string): Promise<NotificationDeliveryDto> {
+  async getDeliveryStats(
+    notificationId: string,
+  ): Promise<NotificationDeliveryDto> {
     const notification = await this.notificationRepository.findOne({
       where: { id: notificationId },
     });
@@ -250,7 +286,9 @@ export class AdminNotificationsService {
       }
 
       if (target?.kycStatus && target.kycStatus.length > 0) {
-        query.andWhere('user.kycStatus IN (:...kycStatus)', { kycStatus: target.kycStatus });
+        query.andWhere('user.kycStatus IN (:...kycStatus)', {
+          kycStatus: target.kycStatus,
+        });
       }
 
       if (target?.tiers && target.tiers.length > 0) {
@@ -266,14 +304,16 @@ export class AdminNotificationsService {
         .createQueryBuilder('subscription')
         .select('subscription.userId', 'userId')
         .addSelect('SUM(subscription.amount)', 'total')
-        .where('subscription.status = :status', { status: SubscriptionStatus.ACTIVE })
+        .where('subscription.status = :status', {
+          status: SubscriptionStatus.ACTIVE,
+        })
         .groupBy('subscription.userId')
         .having(
           target.minSavings !== undefined && target.maxSavings !== undefined
             ? 'SUM(subscription.amount) BETWEEN :min AND :max'
             : target.minSavings !== undefined
-            ? 'SUM(subscription.amount) >= :min'
-            : 'SUM(subscription.amount) <= :max',
+              ? 'SUM(subscription.amount) >= :min'
+              : 'SUM(subscription.amount) <= :max',
           {
             min: target.minSavings,
             max: target.maxSavings,
@@ -292,15 +332,22 @@ export class AdminNotificationsService {
    * Scheduled job to process scheduled notifications
    * Runs every minute to check for pending scheduled notifications
    */
+  @ShutdownTrackedTask()
   @Cron(CronExpression.EVERY_MINUTE)
   async processScheduledNotifications(): Promise<void> {
     const now = new Date();
 
     const scheduledNotifications = await this.notificationRepository
       .createQueryBuilder('notification')
-      .where('notification.metadata->>scheduled = :scheduled', { scheduled: 'true' })
-      .andWhere('notification.metadata->>processed = :processed', { processed: 'false' })
-      .andWhere('notification.metadata->scheduledAt <= :now', { now: now.toISOString() })
+      .where('notification.metadata->>scheduled = :scheduled', {
+        scheduled: 'true',
+      })
+      .andWhere('notification.metadata->>processed = :processed', {
+        processed: 'false',
+      })
+      .andWhere('notification.metadata->scheduledAt <= :now', {
+        now: now.toISOString(),
+      })
       .getMany();
 
     for (const notification of scheduledNotifications) {
@@ -308,7 +355,9 @@ export class AdminNotificationsService {
         const dto: BroadcastNotificationDto = {
           title: notification.title,
           message: notification.message,
-          channels: notification.metadata?.channels || [NotificationChannel.IN_APP],
+          channels: notification.metadata?.channels || [
+            NotificationChannel.IN_APP,
+          ],
           target: notification.metadata?.target,
         };
 
@@ -320,7 +369,9 @@ export class AdminNotificationsService {
 
         this.logger.log(`Processed scheduled notification ${notification.id}`);
       } catch (error) {
-        this.logger.error(`Failed to process scheduled notification ${notification.id}: ${error.message}`);
+        this.logger.error(
+          `Failed to process scheduled notification ${notification.id}: ${error.message}`,
+        );
       }
     }
   }

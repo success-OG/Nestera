@@ -2,7 +2,7 @@ import { Controller, Get, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
 import { PostmanCollectionGenerator } from './postman-collection.generator';
-import { SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
 
 @Controller('api/postman')
@@ -16,10 +16,12 @@ export class PostmanController {
     description: 'Download Postman collection JSON for API v2',
   })
   async exportCollectionV2(@Res() res: Response) {
-    const openapi = SwaggerModule.createDocument(this.app, {
-      title: 'Nestera API v2',
-      version: '2.0.0',
-    });
+    const config = new DocumentBuilder()
+      .setTitle('Nestera API v2')
+      .setVersion('2.0.0')
+      .build();
+
+    const openapi = SwaggerModule.createDocument(this.app, config);
 
     const collection = PostmanCollectionGenerator.generate(
       openapi,

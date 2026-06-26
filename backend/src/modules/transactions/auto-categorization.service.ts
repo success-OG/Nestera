@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { TransactionCategory } from './entities/transaction.entity';
+import { LedgerTransaction } from '../blockchain/entities/transaction.entity';
 
 /**
  * Simple rule-based auto-categorization service.
@@ -6,20 +8,20 @@ import { Injectable } from '@nestjs/common';
  */
 @Injectable()
 export class AutoCategorizationService {
-  private keywordMap: Record<string, string> = {
-    grocery: 'Groceries',
-    supermarket: 'Groceries',
-    starbucks: 'Dining',
-    restaurant: 'Dining',
-    uber: 'Transport',
-    lyft: 'Transport',
-    rent: 'Rent',
-    salary: 'Income',
-    paycheck: 'Income',
-    amazon: 'Shopping',
+  private keywordMap: Record<string, TransactionCategory> = {
+    grocery: TransactionCategory.GROCERIES,
+    supermarket: TransactionCategory.GROCERIES,
+    starbucks: TransactionCategory.DINING,
+    restaurant: TransactionCategory.DINING,
+    uber: TransactionCategory.TRANSPORT,
+    lyft: TransactionCategory.TRANSPORT,
+    rent: TransactionCategory.RENT,
+    salary: TransactionCategory.INCOME,
+    paycheck: TransactionCategory.INCOME,
+    amazon: TransactionCategory.SHOPPING,
   };
 
-  predictCategory(metadata: Record<string, any> | undefined): string | null {
+  predictCategory(metadata: Record<string, any> | undefined): TransactionCategory | null {
     if (!metadata) return null;
 
     // Look into common fields
@@ -47,5 +49,19 @@ export class AutoCategorizationService {
     }
 
     return null;
+  }
+
+  categorize(
+    transaction: Pick<LedgerTransaction, 'metadata'>,
+  ): { category: TransactionCategory; tags: string[] } | null {
+    const category = this.predictCategory(transaction.metadata ?? undefined);
+    if (!category) {
+      return null;
+    }
+
+    return {
+      category,
+      tags: [category.toLowerCase().replace(/\s+/g, '-')],
+    };
   }
 }

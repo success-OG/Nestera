@@ -34,6 +34,11 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { SavingsProductDto } from './dto/savings-product.dto';
 import { GoalProgressDto } from './dto/goal-progress.dto';
 import {
+  ProductComparisonResponseDto,
+  ProductComparisonItemDto,
+  HistoricalPerformanceDto,
+} from './dto/product-comparison.dto';
+import {
   MetricsGranularity,
   ProductMetricsDto,
 } from './dto/product-metrics.dto';
@@ -45,8 +50,8 @@ import { Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { SavingsProductVersionAudit } from './entities/savings-product-version-audit.entity';
-import { Repository } from 'typeorm';
 import { WaitlistService } from './waitlist.service';
+import { MilestoneService } from './services/milestone.service';
 
 export type SavingsGoalProgress = GoalProgressDto;
 
@@ -71,7 +76,29 @@ export interface ProductCapacitySnapshot {
 
 const STROOPS_PER_XLM = 10_000_000;
 const POOLS_CACHE_KEY = 'pools_all';
+const COMPARE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const METRICS_CACHE_TTL = 3600000; // 1 hour in ms
+
+/**
+ * Derive a risk level from the product type.
+ * FIXED products are lower risk; FLEXIBLE products carry medium risk.
+ */
+function deriveRiskLevel(type: SavingsProductType): 'low' | 'medium' | 'high' {
+  return type === SavingsProductType.FIXED ? 'low' : 'medium';
+}
+
+/**
+ * Generate synthetic historical performance data based on the product's
+ * current APY. In a production system this would be fetched from a
+ * dedicated time-series store.
+ */
+function buildHistoricalPerformance(apy: number): HistoricalPerformanceDto[] {
+  const currentYear = new Date().getFullYear();
+  return [currentYear - 2, currentYear - 1].map((year, idx) => ({
+    year,
+    return: Math.max(0, Math.round((apy - (1 - idx * 0.5)) * 100) / 100),
+  }));
+}
 
 @Injectable()
 export class SavingsService {
@@ -96,6 +123,7 @@ export class SavingsService {
     private readonly transactionRepository: Repository<Transaction>,
     private readonly blockchainSavingsService: BlockchainSavingsService,
     private readonly predictiveEvaluatorService: PredictiveEvaluatorService,
+    private readonly milestoneService: MilestoneService,
     private readonly waitlistService: WaitlistService,
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
@@ -189,8 +217,6 @@ export class SavingsService {
       },
     });
     const previousIsActive = product.isActive;
-    Object.assign(product, dto);
-    const updatedProduct = await this.productRepository.save(product);
     await this.syncCapacityState(updatedProduct);
     await this.invalidatePoolsCache();
 
@@ -228,33 +254,6 @@ export class SavingsService {
       relations: ['subscriptions'],
     });
 
-    const dtos: SavingsProductDto[] = products.map((product) => {
-      // Calculate TVL by summing active subscriptions
-      const tvlAmount = product.subscriptions
-        ? product.subscriptions
-            .filter((s) => s.status === SubscriptionStatus.ACTIVE)
-            .reduce((sum, s) => sum + Number(s.amount), 0)
-        : 0;
-
-      return {
-        id: product.id,
-        name: product.name,
-        type: product.type,
-        description: product.description,
-        interestRate: Number(product.interestRate),
-        minAmount: Number(product.minAmount),
-        maxAmount: Number(product.maxAmount),
-        tenureMonths: product.tenureMonths,
-        contractId: product.contractId,
-        isActive: product.isActive,
-        maxSubscriptionsPerUser: product.maxSubscriptionsPerUser,
-        version: product.version ?? 1,
-        riskLevel: product.riskLevel || RiskLevel.LOW,
-        tvlAmount,
-        createdAt: product.createdAt,
-        updatedAt: product.updatedAt,
-      };
-    });
     const dtos: SavingsProductDto[] = await Promise.all(
       products.map(async (product) => {
         // Calculate TVL by summing active subscriptions
@@ -277,6 +276,8 @@ export class SavingsService {
           contractId: product.contractId,
           isActive: product.isActive,
           riskLevel: product.riskLevel || RiskLevel.LOW,
+          maxSubscriptionsPerUser: product.maxSubscriptionsPerUser,
+          version: product.version,
           tvlAmount,
           maxCapacity: capacity.maxCapacity,
           utilizedCapacity: capacity.utilizedCapacity,
@@ -307,6 +308,62 @@ export class SavingsService {
       throw new NotFoundException(`Savings product ${id} not found`);
     }
     return product;
+  }
+
+  /**
+   * #533 / #593 — Compare up to 5 savings products side-by-side.
+   * Results are cached per unique sorted product-ID set for 10 minutes.
+   */
+  async compareProducts(
+    productIds: string[],
+    amount?: number,
+    duration?: number,
+  ): Promise<ProductComparisonResponseDto> {
+    const cacheKey = `compare:${[...productIds].sort().join(',')}:${amount ?? ''}:${duration ?? ''}`;
+
+    const cached =
+      await this.cacheManager.get<ProductComparisonResponseDto>(cacheKey);
+    if (cached) {
+      return { ...cached, cached: true };
+    }
+
+    const products = await this.productRepository.find({
+      where: { id: In(productIds) },
+    });
+
+    if (products.length !== productIds.length) {
+      const foundIds = new Set(products.map((p) => p.id));
+      const missing = productIds.filter((id) => !foundIds.has(id));
+      throw new NotFoundException(
+        `Savings products not found: ${missing.join(', ')}`,
+      );
+    }
+
+    const items: ProductComparisonItemDto[] = products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      type: product.type,
+      description: product.description,
+      apy: Number(product.interestRate),
+      tenure: product.tenureMonths,
+      riskLevel: deriveRiskLevel(product.type),
+      minAmount: Number(product.minAmount),
+      maxAmount: Number(product.maxAmount),
+      isActive: product.isActive,
+      contractId: product.contractId,
+      historicalPerformance: buildHistoricalPerformance(
+        Number(product.interestRate),
+      ),
+    }));
+
+    const response: ProductComparisonResponseDto = {
+      products: items,
+      cached: false,
+    };
+
+    await this.cacheManager.set(cacheKey, response, COMPARE_CACHE_TTL_MS);
+
+    return response;
   }
 
   async findProductWithLiveData(id: string): Promise<{
@@ -447,18 +504,19 @@ export class SavingsService {
           );
         }
       }
-    const capacity = await this.getProductCapacitySnapshot(productId);
-    if (
-      capacity.maxCapacity != null &&
-      (capacity.isFull || amount > capacity.availableCapacity)
-    ) {
-      const { position } = await this.waitlistService.joinWaitlist(
-        userId,
-        productId,
-      );
-      throw new ConflictException(
-        `This savings product is at capacity. You have been added to the waitlist at position ${position}.`,
-      );
+      const capacity = await this.getProductCapacitySnapshot(productId);
+      if (
+        capacity.maxCapacity != null &&
+        (capacity.isFull || amount > capacity.availableCapacity)
+      ) {
+        const { position } = await this.waitlistService.joinWaitlist(
+          userId,
+          productId,
+        );
+        throw new ConflictException(
+          `This savings product is at capacity. You have been added to the waitlist at position ${position}.`,
+        );
+      }
     }
 
     const subscription = this.subscriptionRepository.create({
@@ -477,6 +535,9 @@ export class SavingsService {
     });
     const savedSubscription =
       await this.subscriptionRepository.save(subscription);
+
+    // Record waitlist conversion if the user was on the waitlist
+    await this.waitlistService.recordConversion(userId, product.id);
 
     return savedSubscription;
   }
@@ -602,10 +663,7 @@ export class SavingsService {
         : 0;
 
     // Current TVL from active subscriptions
-    const currentTvl = activeSubs.reduce(
-      (sum, s) => sum + Number(s.amount),
-      0,
-    );
+    const currentTvl = activeSubs.reduce((sum, s) => sum + Number(s.amount), 0);
 
     // Risk metrics from APY history
     const apyValues =
@@ -697,8 +755,7 @@ export class SavingsService {
       date,
       tvl:
         Math.round(
-          (items.reduce((s, i) => s + Number(i.tvlAmount), 0) /
-            items.length) *
+          (items.reduce((s, i) => s + Number(i.tvlAmount), 0) / items.length) *
             100,
         ) / 100,
     }));
@@ -746,8 +803,7 @@ export class SavingsService {
 
     // Sharpe ratio: (avg return - risk-free rate) / stdDev
     // Using 0% risk-free rate as a conservative baseline
-    const sharpeRatio =
-      stdDev > 0 ? Math.round((avg / stdDev) * 100) / 100 : 0;
+    const sharpeRatio = stdDev > 0 ? Math.round((avg / stdDev) * 100) / 100 : 0;
 
     return {
       sharpeRatio,
@@ -860,9 +916,26 @@ export class SavingsService {
     // Calculate average yield rate from active subscriptions
     const averageYieldRate = this.calculateAverageYieldRate(subscriptions);
 
-    return goals.map((goal) =>
+    const progressList = goals.map((goal) =>
       this.mapGoalWithProgress(goal, liveVaultBalanceStroops, averageYieldRate),
     );
+
+    // Detect and persist newly achieved milestones (fire-and-forget, non-blocking)
+    for (const progress of progressList) {
+      this.milestoneService
+        .detectAndAchieveMilestones(
+          progress.id,
+          progress.userId,
+          progress.percentageComplete,
+        )
+        .catch((err) =>
+          this.logger.warn(
+            `Milestone detection failed for goal ${progress.id}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
+    return progressList;
   }
 
   async createGoal(
@@ -892,7 +965,12 @@ export class SavingsService {
       status: SavingsGoalStatus.IN_PROGRESS,
     });
 
-    return await this.goalRepository.save(goal);
+    const saved = await this.goalRepository.save(goal);
+
+    // Initialize automatic milestone checkpoints (25/50/75/100%)
+    await this.milestoneService.initializeAutomaticMilestones(saved.id, userId);
+
+    return saved;
   }
 
   async updateGoal(
@@ -932,6 +1010,49 @@ export class SavingsService {
     }
 
     await this.goalRepository.remove(goal);
+  }
+
+  async transferToGoal(
+    userId: string,
+    goalId: string,
+    amount: number,
+    productId?: string,
+  ): Promise<Transaction> {
+    const goal = await this.goalRepository.findOne({
+      where: { id: goalId, userId },
+    });
+    if (!goal) {
+      throw new NotFoundException(
+        `Savings goal ${goalId} not found or does not belong to user`,
+      );
+    }
+    if (goal.status !== SavingsGoalStatus.IN_PROGRESS) {
+      throw new BadRequestException('Cannot transfer to a completed goal');
+    }
+
+    let resolvedProductId = productId;
+    if (!resolvedProductId) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      resolvedProductId = user?.defaultSavingsProductId ?? undefined;
+    }
+    if (!resolvedProductId) {
+      throw new BadRequestException(
+        'No savings product specified and user has no default product',
+      );
+    }
+
+    await this.subscribe(userId, resolvedProductId, amount, true);
+
+    const tx = this.transactionRepository.create({
+      userId,
+      type: TxType.DEPOSIT,
+      amount: String(amount),
+      status: TxStatus.COMPLETED,
+      poolId: resolvedProductId,
+      metadata: { goalId, goalName: goal.goalName, transferType: 'GOAL_AUTO' },
+      txHash: `goal-transfer-${goalId}-${Date.now()}`,
+    });
+    return this.transactionRepository.save(tx);
   }
 
   async createWithdrawalRequest(
@@ -1312,6 +1433,8 @@ export class SavingsService {
         metadata: options.metadata ?? null,
       }),
     );
+  }
+
   private async syncCapacityState(
     product: SavingsProduct,
   ): Promise<SavingsProduct> {

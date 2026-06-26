@@ -15,6 +15,7 @@ The project solves the problem of opaque, centralized savings platforms in emerg
 - Group savings pools with shared rules and governance
 - Native USDC-based savings on Stellar testnet
 - Web interface for seamless contract interaction
+- Detailed savings product reference: `SAVINGS_PRODUCT_REFERENCE.md`
 
 ---
 

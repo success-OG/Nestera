@@ -15,6 +15,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { BackupRecord, BackupStatus } from './entities/backup-record.entity';
+import { ShutdownTrackedTask } from '../../common/decorators/shutdown-task.decorator';
 
 const execAsync = promisify(exec);
 
@@ -50,6 +51,7 @@ export class BackupService {
   }
 
   // Daily at 02:00 UTC
+  @ShutdownTrackedTask()
   @Cron('0 2 * * *')
   async runDailyBackup(): Promise<BackupRecord> {
     this.logger.log('Starting daily database backup...');
@@ -98,6 +100,7 @@ export class BackupService {
   }
 
   // Purge backups older than retention window — runs daily at 03:00 UTC
+  @ShutdownTrackedTask()
   @Cron('0 3 * * *')
   async purgeExpiredBackups(): Promise<void> {
     const expired = await this.backupRepo

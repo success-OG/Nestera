@@ -24,6 +24,20 @@ export enum TxStatus {
   FAILED = 'FAILED',
 }
 
+export enum TransactionCategory {
+  GROCERIES = 'Groceries',
+  DINING = 'Dining',
+  TRANSPORT = 'Transport',
+  SHOPPING = 'Shopping',
+  ENTERTAINMENT = 'Entertainment',
+  UTILITIES = 'Utilities',
+  RENT = 'Rent',
+  INCOME = 'Income',
+  SAVINGS = 'Savings',
+  INVESTMENT = 'Investment',
+  OTHER = 'Other',
+}
+
 @Entity('transactions')
 @Unique(['txHash'])
 export class Transaction extends BaseEntity {

@@ -52,6 +52,12 @@ export class ProposalListItemDto {
   })
   againstPercent: number;
 
+  @ApiProperty({
+    description: 'Percentage of votes cast ABSTAIN (0–100)',
+    example: 10.0,
+  })
+  abstainPercent: number;
+
   @ApiProperty({ type: () => ProposalTimelineDto })
   timeline: ProposalTimelineDto;
 }

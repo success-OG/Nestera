@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LedgerTransactionType } from '../../blockchain/entities/transaction.entity';
+import {
+  LedgerTransactionStatus,
+  LedgerTransactionType,
+} from '../../blockchain/entities/transaction.entity';
 
 export class TransactionResponseDto {
   @ApiProperty({ description: 'Transaction ID' })
@@ -13,6 +16,12 @@ export class TransactionResponseDto {
     enum: LedgerTransactionType,
   })
   type: LedgerTransactionType;
+
+  @ApiProperty({
+    description: 'Transaction status',
+    enum: LedgerTransactionStatus,
+  })
+  status: LedgerTransactionStatus;
 
   @ApiProperty({ description: 'Transaction amount (raw decimal string)' })
   amount: string;

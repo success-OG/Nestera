@@ -1,0 +1,140 @@
+{
+  "errorCodes": [
+    {
+      "code": "AUTH_001",
+      "httpStatus": 401,
+      "defaultMessage": "Authentication required. Please provide valid credentials.",
+      "localizationKey": "AUTH_001",
+      "category": "AUTH",
+      "description": "User must authenticate before accessing resource"
+    },
+    {
+      "code": "AUTH_002",
+      "httpStatus": 401,
+      "defaultMessage": "Invalid or expired authentication token.",
+      "localizationKey": "AUTH_002",
+      "category": "AUTH",
+      "description": "Token validation failed"
+    },
+    {
+      "code": "AUTHZ_001",
+      "httpStatus": 403,
+      "defaultMessage": "You do not have permission to access this resource.",
+      "localizationKey": "AUTHZ_001",
+      "category": "AUTHZ",
+      "description": "Insufficient permissions"
+    },
+    {
+      "code": "VAL_001",
+      "httpStatus": 400,
+      "defaultMessage": "Validation failed. Please check your input.",
+      "localizationKey": "VAL_001",
+      "category": "VAL",
+      "description": "Request validation failed"
+    },
+    {
+      "code": "DB_001",
+      "httpStatus": 503,
+      "defaultMessage": "Database connection is currently unavailable.",
+      "localizationKey": "DB_001",
+      "category": "DB",
+      "description": "Database connection error"
+    },
+    {
+      "code": "DB_002",
+      "httpStatus": 503,
+      "defaultMessage": "Database query timed out. Please try again.",
+      "localizationKey": "DB_002",
+      "category": "DB",
+      "description": "Query timeout error"
+    },
+    {
+      "code": "DB_003",
+      "httpStatus": 409,
+      "defaultMessage": "This resource already exists.",
+      "localizationKey": "DB_003",
+      "category": "DB",
+      "description": "Unique constraint violation"
+    },
+    {
+      "code": "DB_004",
+      "httpStatus": 409,
+      "defaultMessage": "Related resource not found.",
+      "localizationKey": "DB_004",
+      "category": "DB",
+      "description": "Foreign key constraint violation"
+    },
+    {
+      "code": "RPC_001",
+      "httpStatus": 504,
+      "defaultMessage": "Soroban RPC request timed out. The network may be under load.",
+      "localizationKey": "RPC_001",
+      "category": "RPC",
+      "description": "RPC timeout"
+    },
+    {
+      "code": "RPC_002",
+      "httpStatus": 503,
+      "defaultMessage": "All Soroban RPC endpoints are currently unavailable. Please retry later.",
+      "localizationKey": "RPC_002",
+      "category": "RPC",
+      "description": "All RPC endpoints exhausted"
+    },
+    {
+      "code": "RPC_003",
+      "httpStatus": 400,
+      "defaultMessage": "Contract execution failed.",
+      "localizationKey": "RPC_003",
+      "category": "RPC",
+      "description": "Contract execution error"
+    },
+    {
+      "code": "RPC_004",
+      "httpStatus": 400,
+      "defaultMessage": "Transaction submission failed.",
+      "localizationKey": "RPC_004",
+      "category": "RPC",
+      "description": "Transaction submission error"
+    },
+    {
+      "code": "RATE_001",
+      "httpStatus": 429,
+      "defaultMessage": "Rate limit exceeded. Please try again later.",
+      "localizationKey": "RATE_001",
+      "category": "RATE",
+      "description": "Rate limit exceeded"
+    },
+    {
+      "code": "SYS_400",
+      "httpStatus": 400,
+      "defaultMessage": "Bad request. Please check your input.",
+      "localizationKey": "SYS_400",
+      "category": "SYS",
+      "description": "Bad request"
+    },
+    {
+      "code": "SYS_404",
+      "httpStatus": 404,
+      "defaultMessage": "The requested resource was not found.",
+      "localizationKey": "SYS_404",
+      "category": "SYS",
+      "description": "Resource not found"
+    },
+    {
+      "code": "SYS_409",
+      "httpStatus": 409,
+      "defaultMessage": "Conflict with existing resource.",
+      "localizationKey": "SYS_409",
+      "category": "SYS",
+      "description": "Resource conflict"
+    },
+    {
+      "code": "SYS_500",
+      "httpStatus": 500,
+      "defaultMessage": "Internal server error. Please try again later.",
+      "localizationKey": "SYS_500",
+      "category": "SYS",
+      "description": "Internal server error"
+    }
+  ]
+}

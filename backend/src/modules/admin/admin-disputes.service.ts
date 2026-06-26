@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Dispute, DisputeStatus, DisputePriority, DisputeTimeline } from '../disputes/entities/dispute.entity';
+import {
+  Dispute,
+  DisputeStatus,
+  DisputePriority,
+  DisputeTimeline,
+} from '../disputes/entities/dispute.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
   DisputeFilterDto,
@@ -29,8 +34,11 @@ export class AdminDisputesService {
   /**
    * Find all disputes with optional filters
    */
-  async findAll(filters: DisputeFilterDto): Promise<{ disputes: Dispute[]; total: number }> {
-    const query = this.disputeRepository.createQueryBuilder('dispute')
+  async findAll(
+    filters: DisputeFilterDto,
+  ): Promise<{ disputes: Dispute[]; total: number }> {
+    const query = this.disputeRepository
+      .createQueryBuilder('dispute')
       .leftJoinAndSelect('dispute.claim', 'claim')
       .leftJoinAndSelect('dispute.messages', 'messages')
       .leftJoinAndSelect('dispute.timeline', 'timeline');
@@ -40,19 +48,27 @@ export class AdminDisputesService {
     }
 
     if (filters.priority) {
-      query.andWhere('dispute.priority = :priority', { priority: filters.priority });
+      query.andWhere('dispute.priority = :priority', {
+        priority: filters.priority,
+      });
     }
 
     if (filters.assignedTo) {
-      query.andWhere('dispute.assignedTo = :assignedTo', { assignedTo: filters.assignedTo });
+      query.andWhere('dispute.assignedTo = :assignedTo', {
+        assignedTo: filters.assignedTo,
+      });
     }
 
     if (filters.fromDate) {
-      query.andWhere('dispute.createdAt >= :fromDate', { fromDate: filters.fromDate });
+      query.andWhere('dispute.createdAt >= :fromDate', {
+        fromDate: filters.fromDate,
+      });
     }
 
     if (filters.toDate) {
-      query.andWhere('dispute.createdAt <= :toDate', { toDate: filters.toDate });
+      query.andWhere('dispute.createdAt <= :toDate', {
+        toDate: filters.toDate,
+      });
     }
 
     query.orderBy('dispute.createdAt', 'DESC');
@@ -88,7 +104,12 @@ export class AdminDisputesService {
   /**
    * Assign a dispute to an admin
    */
-  async assignDispute(id: string, dto: AssignDisputeDto, adminId: string, ipAddress?: string): Promise<Dispute> {
+  async assignDispute(
+    id: string,
+    dto: AssignDisputeDto,
+    adminId: string,
+    ipAddress?: string,
+  ): Promise<Dispute> {
     const dispute = await this.findOne(id);
     const previousState = {
       assignedTo: dispute.assignedTo,
@@ -97,23 +118,35 @@ export class AdminDisputesService {
 
     dispute.assignedTo = dto.assignedTo;
     dispute.assignedAt = new Date();
-    dispute.status = dispute.status === DisputeStatus.OPEN 
-      ? DisputeStatus.IN_PROGRESS 
-      : dispute.status;
+    dispute.status =
+      dispute.status === DisputeStatus.OPEN
+        ? DisputeStatus.IN_PROGRESS
+        : dispute.status;
 
     const savedDispute = await this.disputeRepository.save(dispute);
 
     // Create timeline entry
-    await this.createTimelineEntry(dispute, 'ASSIGN', adminId, 'Dispute assigned to admin', previousState, {
-      assignedTo: dto.assignedTo,
-      assignedAt: dispute.assignedAt,
-    }, ipAddress);
+    await this.createTimelineEntry(
+      dispute,
+      'ASSIGN',
+      adminId,
+      'Dispute assigned to admin',
+      previousState,
+      {
+        assignedTo: dto.assignedTo,
+        assignedAt: dispute.assignedAt,
+      },
+      ipAddress,
+    );
 
     // Notify user
     await this.notifyUserOnStatusChange(dispute, 'assigned');
 
     // Emit event
-    this.eventEmitter.emit('dispute.assigned', { disputeId: id, assignedTo: dto.assignedTo });
+    this.eventEmitter.emit('dispute.assigned', {
+      disputeId: id,
+      assignedTo: dto.assignedTo,
+    });
 
     return savedDispute;
   }
@@ -121,7 +154,12 @@ export class AdminDisputesService {
   /**
    * Resolve a dispute
    */
-  async resolveDispute(id: string, dto: ResolveDisputeDto, adminId: string, ipAddress?: string): Promise<Dispute> {
+  async resolveDispute(
+    id: string,
+    dto: ResolveDisputeDto,
+    adminId: string,
+    ipAddress?: string,
+  ): Promise<Dispute> {
     const dispute = await this.findOne(id);
     const previousState = {
       status: dispute.status,
@@ -138,18 +176,29 @@ export class AdminDisputesService {
     const savedDispute = await this.disputeRepository.save(dispute);
 
     // Create timeline entry
-    await this.createTimelineEntry(dispute, 'RESOLVE', adminId, 'Dispute resolved', previousState, {
-      resolution: dto.resolution,
-      status: dispute.status,
-      resolvedAt: dispute.resolvedAt,
-      resolvedBy: adminId,
-    }, ipAddress);
+    await this.createTimelineEntry(
+      dispute,
+      'RESOLVE',
+      adminId,
+      'Dispute resolved',
+      previousState,
+      {
+        resolution: dto.resolution,
+        status: dispute.status,
+        resolvedAt: dispute.resolvedAt,
+        resolvedBy: adminId,
+      },
+      ipAddress,
+    );
 
     // Notify user
     await this.notifyUserOnStatusChange(dispute, 'resolved');
 
     // Emit event
-    this.eventEmitter.emit('dispute.resolved', { disputeId: id, resolution: dto.resolution });
+    this.eventEmitter.emit('dispute.resolved', {
+      disputeId: id,
+      resolution: dto.resolution,
+    });
 
     return savedDispute;
   }
@@ -157,7 +206,12 @@ export class AdminDisputesService {
   /**
    * Escalate a dispute to a senior admin
    */
-  async escalateDispute(id: string, dto: EscalateDisputeDto, adminId: string, ipAddress?: string): Promise<Dispute> {
+  async escalateDispute(
+    id: string,
+    dto: EscalateDisputeDto,
+    adminId: string,
+    ipAddress?: string,
+  ): Promise<Dispute> {
     const dispute = await this.findOne(id);
     const previousState = {
       escalatedTo: dispute.escalatedTo,
@@ -172,19 +226,30 @@ export class AdminDisputesService {
     const savedDispute = await this.disputeRepository.save(dispute);
 
     // Create timeline entry
-    await this.createTimelineEntry(dispute, 'ESCALATE', adminId, 
-      dto.reason ? `Dispute escalated: ${dto.reason}` : 'Dispute escalated to senior admin',
-      previousState, {
+    await this.createTimelineEntry(
+      dispute,
+      'ESCALATE',
+      adminId,
+      dto.reason
+        ? `Dispute escalated: ${dto.reason}`
+        : 'Dispute escalated to senior admin',
+      previousState,
+      {
         escalatedTo: dto.escalatedTo,
         escalatedAt: dispute.escalatedAt,
         status: DisputeStatus.ESCALATED,
-      }, ipAddress);
+      },
+      ipAddress,
+    );
 
     // Notify user
     await this.notifyUserOnStatusChange(dispute, 'escalated');
 
     // Emit event
-    this.eventEmitter.emit('dispute.escalated', { disputeId: id, escalatedTo: dto.escalatedTo });
+    this.eventEmitter.emit('dispute.escalated', {
+      disputeId: id,
+      escalatedTo: dto.escalatedTo,
+    });
 
     return savedDispute;
   }
@@ -192,7 +257,12 @@ export class AdminDisputesService {
   /**
    * Add evidence/document to a dispute
    */
-  async addEvidence(id: string, dto: AddEvidenceDto, adminId: string, ipAddress?: string): Promise<Dispute> {
+  async addEvidence(
+    id: string,
+    dto: AddEvidenceDto,
+    adminId: string,
+    ipAddress?: string,
+  ): Promise<Dispute> {
     const dispute = await this.findOne(id);
     const previousState = { evidence: dispute.evidence || [] };
 
@@ -211,12 +281,23 @@ export class AdminDisputesService {
     const savedDispute = await this.disputeRepository.save(dispute);
 
     // Create timeline entry
-    await this.createTimelineEntry(dispute, 'EVIDENCE_ADD', adminId, `Evidence added: ${dto.name}`, previousState, {
-      evidence: dispute.evidence,
-    }, ipAddress);
+    await this.createTimelineEntry(
+      dispute,
+      'EVIDENCE_ADD',
+      adminId,
+      `Evidence added: ${dto.name}`,
+      previousState,
+      {
+        evidence: dispute.evidence,
+      },
+      ipAddress,
+    );
 
     // Emit event
-    this.eventEmitter.emit('dispute.evidence.added', { disputeId: id, evidence: newEvidence });
+    this.eventEmitter.emit('dispute.evidence.added', {
+      disputeId: id,
+      evidence: newEvidence,
+    });
 
     return savedDispute;
   }
@@ -224,7 +305,12 @@ export class AdminDisputesService {
   /**
    * Update dispute status/priority
    */
-  async updateDispute(id: string, dto: UpdateDisputeDto, adminId: string, ipAddress?: string): Promise<Dispute> {
+  async updateDispute(
+    id: string,
+    dto: UpdateDisputeDto,
+    adminId: string,
+    ipAddress?: string,
+  ): Promise<Dispute> {
     const dispute = await this.findOne(id);
     const previousState = {
       status: dispute.status,
@@ -246,11 +332,19 @@ export class AdminDisputesService {
     const savedDispute = await this.disputeRepository.save(dispute);
 
     // Create timeline entry
-    await this.createTimelineEntry(dispute, 'UPDATE', adminId, 'Dispute updated', previousState, {
-      status: dispute.status,
-      priority: dispute.priority,
-      assignedTo: dispute.assignedTo,
-    }, ipAddress);
+    await this.createTimelineEntry(
+      dispute,
+      'UPDATE',
+      adminId,
+      'Dispute updated',
+      previousState,
+      {
+        status: dispute.status,
+        priority: dispute.priority,
+        assignedTo: dispute.assignedTo,
+      },
+      ipAddress,
+    );
 
     // Notify user if status changed
     if (dto.status && dto.status !== previousState.status) {
@@ -274,16 +368,40 @@ export class AdminDisputesService {
     escalated: number;
     byPriority: Record<string, number>;
   }> {
-    const [total, open, inProgress, resolved, escalated, low, medium, high, critical] = await Promise.all([
+    const [
+      total,
+      open,
+      inProgress,
+      resolved,
+      escalated,
+      low,
+      medium,
+      high,
+      critical,
+    ] = await Promise.all([
       this.disputeRepository.count(),
       this.disputeRepository.count({ where: { status: DisputeStatus.OPEN } }),
-      this.disputeRepository.count({ where: { status: DisputeStatus.IN_PROGRESS } }),
-      this.disputeRepository.count({ where: { status: DisputeStatus.RESOLVED } }),
-      this.disputeRepository.count({ where: { status: DisputeStatus.ESCALATED } }),
-      this.disputeRepository.count({ where: { priority: DisputePriority.LOW } }),
-      this.disputeRepository.count({ where: { priority: DisputePriority.MEDIUM } }),
-      this.disputeRepository.count({ where: { priority: DisputePriority.HIGH } }),
-      this.disputeRepository.count({ where: { priority: DisputePriority.CRITICAL } }),
+      this.disputeRepository.count({
+        where: { status: DisputeStatus.IN_PROGRESS },
+      }),
+      this.disputeRepository.count({
+        where: { status: DisputeStatus.RESOLVED },
+      }),
+      this.disputeRepository.count({
+        where: { status: DisputeStatus.ESCALATED },
+      }),
+      this.disputeRepository.count({
+        where: { priority: DisputePriority.LOW },
+      }),
+      this.disputeRepository.count({
+        where: { priority: DisputePriority.MEDIUM },
+      }),
+      this.disputeRepository.count({
+        where: { priority: DisputePriority.HIGH },
+      }),
+      this.disputeRepository.count({
+        where: { priority: DisputePriority.CRITICAL },
+      }),
     ]);
 
     return {
@@ -329,7 +447,10 @@ export class AdminDisputesService {
   /**
    * Notify user on status change
    */
-  private async notifyUserOnStatusChange(dispute: Dispute, changeType: string): Promise<void> {
+  private async notifyUserOnStatusChange(
+    dispute: Dispute,
+    changeType: string,
+  ): Promise<void> {
     try {
       let title = 'Dispute Update';
       let message = '';
@@ -361,7 +482,9 @@ export class AdminDisputesService {
         metadata: { disputeId: dispute.id, changeType },
       });
     } catch (error) {
-      this.logger.error(`Failed to notify user on status change: ${error.message}`);
+      this.logger.error(
+        `Failed to notify user on status change: ${error.message}`,
+      );
     }
   }
 }

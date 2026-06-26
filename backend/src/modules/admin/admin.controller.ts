@@ -12,6 +12,8 @@ import {
   ApiTags,
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
+  ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
 import { UserService } from '../user/user.service';
@@ -37,6 +39,12 @@ export class AdminController {
   @ApiOperation({ summary: 'Approve KYC for a user' })
   @ApiResponse({ status: 200, description: 'KYC approved' })
   @ApiResponse({ status: 400, description: 'User ID is required' })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'KYC approved' })
+  @ApiResponse({ status: 400, description: 'Missing user ID' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin role required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async approveKyc(@Param('id') userId: string) {
     if (!userId) {
       throw new BadRequestException('User ID is required');
@@ -51,6 +59,12 @@ export class AdminController {
     status: 400,
     description: 'User ID or rejection reason missing',
   })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'KYC rejected' })
+  @ApiResponse({ status: 400, description: 'Missing user ID or rejection reason' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin role required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async rejectKyc(@Param('id') userId: string, @Body() dto: RejectKycDto) {
     if (!userId) {
       throw new BadRequestException('User ID is required');
@@ -68,6 +82,16 @@ export class AdminController {
     status: 400,
     description: 'Invalid action or missing parameters',
   })
+  @ApiOperation({
+    summary: 'Approve or reject KYC for a user (single endpoint)',
+    description: 'Set `action` to `"approve"` or `"reject"`. Reason is required for rejection.',
+  })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: 200, description: 'KYC status updated' })
+  @ApiResponse({ status: 400, description: 'Invalid action or missing reason' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin role required' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async updateKycStatus(
     @Param('id') userId: string,
     @Body() body: { action: 'approve' | 'reject'; reason?: string },
@@ -93,13 +117,18 @@ export class AdminController {
   @Get('rate-limits/summary')
   @ApiOperation({ summary: 'Get rate limit violation summary' })
   @ApiResponse({ status: 200, description: 'Rate limit violation summary' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin role required' })
   getRateLimitSummary() {
     return this.rateLimitMonitor.getViolationSummary();
   }
 
   @Get('rate-limits/violations')
   @ApiOperation({ summary: 'Get recent rate limit violations' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Max results (default 50)', type: Number })
   @ApiResponse({ status: 200, description: 'Recent rate limit violations' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin role required' })
   getRecentViolations(@Query('limit') limit?: string) {
     return this.rateLimitMonitor.getRecentViolations(
       limit ? parseInt(limit, 10) : 50,
@@ -108,7 +137,11 @@ export class AdminController {
 
   @Get('rate-limits/violations/:userId')
   @ApiOperation({ summary: 'Get rate limit violations for a specific user' })
+  @ApiParam({ name: 'userId', description: 'User UUID' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Max results (default 50)', type: Number })
   @ApiResponse({ status: 200, description: 'User rate limit violations' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Admin role required' })
   getUserViolations(
     @Param('userId') userId: string,
     @Query('limit') limit?: string,

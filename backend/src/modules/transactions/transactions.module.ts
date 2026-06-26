@@ -6,9 +6,12 @@ import { TransactionsService } from './transactions.service';
 import { AutoCategorizationService } from './auto-categorization.service';
 import { LedgerTransaction } from '../blockchain/entities/transaction.entity';
 import { TransactionFormattingInterceptor } from '../../common/interceptors/transaction-formatting.interceptor';
+import { TransactionSavedSearch } from './entities/transaction-saved-search.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([LedgerTransaction])],
+  imports: [
+    TypeOrmModule.forFeature([LedgerTransaction, TransactionSavedSearch]),
+  ],
   controllers: [TransactionsController],
   providers: [
     TransactionsService,

@@ -5,9 +5,12 @@ import {
   Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { WaitlistEntry } from './entities/waitlist-entry.entity';
-import { WaitlistEvent } from './entities/waitlist-event.entity';
+import {
+  WaitlistEvent,
+  WaitlistEventType,
+} from './entities/waitlist-event.entity';
 import { SavingsProduct } from './entities/savings-product.entity';
 import { User } from '../user/entities/user.entity';
 
@@ -123,5 +126,84 @@ export class WaitlistService {
       .set({ notifiedAt: new Date() })
       .where('id IN (:...ids)', { ids: entryIds })
       .execute();
+  }
+
+  /** Fetch a user's active waitlist entry for a product */
+  async getUserEntry(userId: string, productId: string) {
+    const entry = await this.waitlistRepo
+      .createQueryBuilder('w')
+      .where('w.productId = :productId', { productId })
+      .andWhere('w.userId = :userId', { userId })
+      .andWhere('w.notifiedAt IS NULL')
+      .getOne();
+
+    if (!entry) throw new NotFoundException('Waitlist entry not found');
+    return entry;
+  }
+
+  /** Leave a product waitlist */
+  async leaveWaitlist(userId: string, productId: string) {
+    const entry = await this.getUserEntry(userId, productId);
+
+    try {
+      if (this.eventRepo) {
+        await this.eventRepo.save(
+          this.eventRepo.create({
+            entryId: entry.id,
+            userId,
+            productId,
+            type: 'LEAVE' as WaitlistEventType,
+            metadata: null,
+          }),
+        );
+      }
+    } catch (e) {
+      // non-fatal
+    }
+
+    await this.waitlistRepo.delete({ id: entry.id });
+  }
+
+  /** Record that a user has converted from the waitlist (subscribed to product) */
+  async recordConversion(userId: string, productId: string) {
+    if (!this.eventRepo) return;
+
+    // A user converts if they had a waitlist event. We'll find their most recent NOTIFY event to link ACCEPT to, or just create ACCEPT with null entryId if we can't tie to it.
+    // Let's find their most recent NOTIFY or JOIN event for this product.
+    const lastEvent = await this.eventRepo.findOne({
+      where: [
+        { userId, productId, type: 'NOTIFY' },
+        { userId, productId, type: 'JOIN' },
+      ],
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!lastEvent) return; // User was never on waitlist, no conversion to record.
+
+    // Record ACCEPT event
+    try {
+      await this.eventRepo.save(
+        this.eventRepo.create({
+          entryId: lastEvent.entryId,
+          userId,
+          productId,
+          type: 'ACCEPT' as WaitlistEventType,
+          metadata: null,
+        }),
+      );
+    } catch (e) {
+      // ignore
+    }
+
+    // Attempt to remove their active waitlist entry if they somehow subbed while pending
+    try {
+      await this.waitlistRepo.delete({
+        userId,
+        productId,
+        notifiedAt: IsNull(),
+      });
+    } catch (e) {
+      void e;
+    }
   }
 }

@@ -30,7 +30,8 @@ export class WithdrawalStatsResponseDto implements WithdrawalStatsDto {
   approvalRate: number;
 
   @ApiProperty({
-    description: 'Average processing time in milliseconds for completed requests',
+    description:
+      'Average processing time in milliseconds for completed requests',
     example: 3600000,
   })
   averageProcessingTimeMs: number;

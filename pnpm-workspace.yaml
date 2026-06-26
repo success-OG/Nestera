@@ -1,3 +1,7 @@
+packages:
+  - 'backend'
+  - 'frontend'
+  - 'contracts'
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@prisma/engines'

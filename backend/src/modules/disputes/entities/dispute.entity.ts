@@ -47,7 +47,11 @@ export class Dispute {
   @Column({ type: 'enum', enum: DisputeStatus, default: DisputeStatus.OPEN })
   status: DisputeStatus;
 
-  @Column({ type: 'enum', enum: DisputePriority, default: DisputePriority.MEDIUM })
+  @Column({
+    type: 'enum',
+    enum: DisputePriority,
+    default: DisputePriority.MEDIUM,
+  })
   priority: DisputePriority;
 
   @Column({ nullable: true })

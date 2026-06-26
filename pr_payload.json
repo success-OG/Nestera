@@ -1,0 +1,6 @@
+{
+  "title": "feat: integrate BullMQ for async job processing",
+  "head": "martinshub-tech:feature/bullmq-integration",
+  "base": "main",
+  "body": "Implemented BullMQ background job queue for blockchain events, notifications, heavy computations, with retry, priority, dead‑letter handling, and a monitoring dashboard."
+}

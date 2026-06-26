@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-interface HealthCheckResult {
+export interface HealthCheckResult {
   service: string;
   status: 'up' | 'down' | 'degraded';
   responseTime: number;
@@ -16,7 +16,7 @@ export class HealthHistoryService {
 
   recordCheck(result: HealthCheckResult): void {
     this.history.push(result);
-    
+
     if (this.history.length > this.maxHistorySize) {
       this.history.shift();
     }
@@ -24,7 +24,7 @@ export class HealthHistoryService {
 
   getHistory(service?: string, limit: number = 100): HealthCheckResult[] {
     let filtered = this.history;
-    
+
     if (service) {
       filtered = filtered.filter((h) => h.service === service);
     }
@@ -34,7 +34,7 @@ export class HealthHistoryService {
 
   getServiceStats(service: string) {
     const serviceHistory = this.history.filter((h) => h.service === service);
-    
+
     if (serviceHistory.length === 0) {
       return null;
     }

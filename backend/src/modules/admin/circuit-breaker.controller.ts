@@ -4,12 +4,13 @@ import { CircuitBreakerService } from '../../common/circuit-breaker/circuit-brea
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { Role } from '../../common/enums/role.enum';
 
 @Controller('api/admin/circuit-breaker')
 @ApiTags('Admin - Circuit Breaker')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
+@Roles(Role.ADMIN)
 export class CircuitBreakerController {
   constructor(private circuitBreakerService: CircuitBreakerService) {}
 

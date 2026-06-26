@@ -27,13 +27,12 @@ export class WalletController {
   constructor(private readonly walletService: WalletService) {}
 
   @Post('link')
-  @ApiOperation({ summary: 'Link a new Stellar wallet with signature verification' })
+  @ApiOperation({
+    summary: 'Link a new Stellar wallet with signature verification',
+  })
   @ApiResponse({ status: 201, description: 'Wallet linked successfully' })
   @ApiResponse({ status: 409, description: 'Wallet already linked' })
-  linkWallet(
-    @CurrentUser() user: { id: string },
-    @Body() dto: LinkWalletDto,
-  ) {
+  linkWallet(@CurrentUser() user: { id: string }, @Body() dto: LinkWalletDto) {
     return this.walletService.linkWallet(user.id, dto);
   }
 

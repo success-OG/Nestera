@@ -8,13 +8,19 @@ class ProposalVoteTallyDto {
   @ApiProperty({ example: 64 })
   againstVotes: number;
 
+  @ApiProperty({ example: 32 })
+  abstainVotes: number;
+
   @ApiProperty({ example: '84250.5' })
   forWeight: string;
 
   @ApiProperty({ example: '29300' })
   againstWeight: string;
 
-  @ApiProperty({ example: '113550.5' })
+  @ApiProperty({ example: '10500' })
+  abstainWeight: string;
+
+  @ApiProperty({ example: '124050.5' })
   totalWeight: string;
 }
 

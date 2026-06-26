@@ -10,12 +10,13 @@ import { AuthService } from './auth.service';
 import { TwoFactorService } from './two-factor.service';
 import { AuthController } from './auth.controller';
 import { User } from '../modules/user/entities/user.entity';
+import { CacheModule } from '../modules/cache/cache.module';
 
 @Module({
   imports: [
     UserModule,
     TypeOrmModule.forFeature([User]),
-    // CacheModule,
+    CacheModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

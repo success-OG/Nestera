@@ -47,13 +47,31 @@ export class AdminDisputesController {
     description: 'List of disputes',
     schema: {
       properties: {
-        disputes: { type: 'array', items: { $ref: '#/components/schemas/Dispute' } },
+        disputes: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/Dispute' },
+        },
         total: { type: 'number' },
       },
     },
   })
-  @ApiQuery({ name: 'status', required: false, enum: ['OPEN', 'IN_PROGRESS', 'UNDER_REVIEW', 'RESOLVED', 'CLOSED', 'ESCALATED'] })
-  @ApiQuery({ name: 'priority', required: false, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: [
+      'OPEN',
+      'IN_PROGRESS',
+      'UNDER_REVIEW',
+      'RESOLVED',
+      'CLOSED',
+      'ESCALATED',
+    ],
+  })
+  @ApiQuery({
+    name: 'priority',
+    required: false,
+    enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+  })
   @ApiQuery({ name: 'assignedTo', required: false, type: String })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
@@ -102,7 +120,12 @@ export class AdminDisputesController {
     @Headers('x-forwarded-for') forwardedFor?: string,
   ) {
     const ipAddress = forwardedFor || req?.ip;
-    return await this.adminDisputesService.assignDispute(id, dto, req.user?.id || 'admin', ipAddress);
+    return await this.adminDisputesService.assignDispute(
+      id,
+      dto,
+      req.user?.id || 'admin',
+      ipAddress,
+    );
   }
 
   @Post(':id/resolve')
@@ -116,7 +139,12 @@ export class AdminDisputesController {
     @Headers('x-forwarded-for') forwardedFor?: string,
   ) {
     const ipAddress = forwardedFor || req?.ip;
-    return await this.adminDisputesService.resolveDispute(id, dto, req.user?.id || 'admin', ipAddress);
+    return await this.adminDisputesService.resolveDispute(
+      id,
+      dto,
+      req.user?.id || 'admin',
+      ipAddress,
+    );
   }
 
   @Post(':id/escalate')
@@ -130,7 +158,12 @@ export class AdminDisputesController {
     @Headers('x-forwarded-for') forwardedFor?: string,
   ) {
     const ipAddress = forwardedFor || req?.ip;
-    return await this.adminDisputesService.escalateDispute(id, dto, req.user?.id || 'admin', ipAddress);
+    return await this.adminDisputesService.escalateDispute(
+      id,
+      dto,
+      req.user?.id || 'admin',
+      ipAddress,
+    );
   }
 
   @Post(':id/evidence')
@@ -144,7 +177,12 @@ export class AdminDisputesController {
     @Headers('x-forwarded-for') forwardedFor?: string,
   ) {
     const ipAddress = forwardedFor || req?.ip;
-    return await this.adminDisputesService.addEvidence(id, dto, req.user?.id || 'admin', ipAddress);
+    return await this.adminDisputesService.addEvidence(
+      id,
+      dto,
+      req.user?.id || 'admin',
+      ipAddress,
+    );
   }
 
   @Patch(':id')
@@ -158,6 +196,11 @@ export class AdminDisputesController {
     @Headers('x-forwarded-for') forwardedFor?: string,
   ) {
     const ipAddress = forwardedFor || req?.ip;
-    return await this.adminDisputesService.updateDispute(id, dto, req.user?.id || 'admin', ipAddress);
+    return await this.adminDisputesService.updateDispute(
+      id,
+      dto,
+      req.user?.id || 'admin',
+      ipAddress,
+    );
   }
 }

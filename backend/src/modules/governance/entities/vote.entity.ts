@@ -12,6 +12,7 @@ import { GovernanceProposal } from './governance-proposal.entity';
 export enum VoteDirection {
   AGAINST = 'AGAINST',
   FOR = 'FOR',
+  ABSTAIN = 'ABSTAIN',
 }
 
 @Entity('votes')

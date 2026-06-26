@@ -20,7 +20,11 @@ export function ApiExample(options: ApiExampleOptions) {
   );
 }
 
-export function ApiErrorResponse(statusCode: number, description: string, example?: any) {
+export function ApiErrorResponse(
+  statusCode: number,
+  description: string,
+  example?: any,
+) {
   return ApiResponse({
     status: statusCode,
     description,

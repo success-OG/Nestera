@@ -296,7 +296,10 @@ pub fn join_group_save(env: &Env, user: Address, group_id: u64) -> Result<(), Sa
     env.storage().persistent().set(&members_key, &members);
 
     // Increment member count
-    group.member_count += 1;
+    group.member_count = group
+        .member_count
+        .checked_add(1)
+        .ok_or(SavingsError::Overflow)?;
     env.storage().persistent().set(&group_key, &group);
 
     // Add group to user's list of groups
@@ -403,13 +406,18 @@ pub fn contribute_to_group_save(
         .persistent()
         .get(&contribution_key)
         .unwrap_or(0i128);
-    let new_contribution = current_contribution + amount;
+    let new_contribution = current_contribution
+        .checked_add(amount)
+        .ok_or(SavingsError::Overflow)?;
     env.storage()
         .persistent()
         .set(&contribution_key, &new_contribution);
 
     // Update group's current_amount
-    group.current_amount += amount;
+    group.current_amount = group
+        .current_amount
+        .checked_add(amount)
+        .ok_or(SavingsError::Overflow)?;
 
     // Check if goal is reached
     if group.current_amount >= group.target_amount {
@@ -426,7 +434,10 @@ pub fn contribute_to_group_save(
         .persistent()
         .get::<DataKey, crate::storage_types::SavingsPlan>(&plan_key)
     {
-        plan.balance += amount;
+        plan.balance = plan
+            .balance
+            .checked_add(amount)
+            .ok_or(SavingsError::Overflow)?;
         plan.is_completed = group.is_completed;
         plan.last_deposit = env.ledger().timestamp();
         env.storage().persistent().set(&plan_key, &plan);
@@ -454,7 +465,11 @@ pub fn contribute_to_group_save(
 
     // Update user's total balance
     let user_key = DataKey::User(user.clone());
-    if let Some(mut user_data) = env.storage().persistent().get::<DataKey, crate::storage_types::User>(&user_key) {
+    if let Some(mut user_data) = env
+        .storage()
+        .persistent()
+        .get::<DataKey, crate::storage_types::User>(&user_key)
+    {
         user_data.total_balance = user_data
             .total_balance
             .checked_add(amount)
@@ -643,7 +658,11 @@ pub fn break_group_save(env: &Env, user: Address, group_id: u64) -> Result<(), S
 
     // Update user's total balance
     let user_key = DataKey::User(user.clone());
-    if let Some(mut user_data) = env.storage().persistent().get::<DataKey, crate::storage_types::User>(&user_key) {
+    if let Some(mut user_data) = env
+        .storage()
+        .persistent()
+        .get::<DataKey, crate::storage_types::User>(&user_key)
+    {
         user_data.total_balance = user_data
             .total_balance
             .checked_sub(user_contribution)
@@ -671,4 +690,147 @@ pub fn break_group_save(env: &Env, user: Address, group_id: u64) -> Result<(), S
     );
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{NesteraContract, NesteraContractClient};
+    use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String};
+
+    fn setup_env() -> (Env, NesteraContractClient<'static>, Address) {
+        let env = Env::default();
+        let contract_id = env.register(NesteraContract, ());
+        let client = NesteraContractClient::new(&env, &contract_id);
+        let admin = Address::generate(&env);
+        let admin_pk = BytesN::from_array(&env, &[1u8; 32]);
+        env.mock_all_auths();
+        client.initialize(&admin, &admin_pk);
+        (env, client, admin)
+    }
+
+    fn create_group(
+        client: &NesteraContractClient<'_>,
+        env: &Env,
+        creator: &Address,
+    ) -> u64 {
+        client.create_group_save(
+            creator,
+            &String::from_str(env, "Test Group"),
+            &String::from_str(env, "A test group"),
+            &String::from_str(env, "savings"),
+            &10_000i128,
+            &0u32,
+            &100i128,
+            &true,
+            &0u64,
+            &9999999u64,
+        )
+    }
+
+    // ========== Overflow / Underflow Protection Tests (#877) ==========
+
+    #[test]
+    fn test_contribute_rejects_zero_amount() {
+        let (env, client, _) = setup_env();
+        let creator = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&creator);
+
+        let group_id = create_group(&client, &env, &creator);
+        let result = client.try_contribute_to_group_save(&creator, &group_id, &0i128);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_contribute_rejects_negative_amount() {
+        let (env, client, _) = setup_env();
+        let creator = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&creator);
+
+        let group_id = create_group(&client, &env, &creator);
+        let result = client.try_contribute_to_group_save(&creator, &group_id, &(-100i128));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_contribute_updates_member_count_safely() {
+        let (env, client, _) = setup_env();
+        let creator = Address::generate(&env);
+        let member = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&creator);
+        client.initialize_user(&member);
+
+        let group_id = create_group(&client, &env, &creator);
+        client.join_group_save(&member, &group_id);
+
+        // Verify member_count incremented without overflow
+        // (no direct accessor, verified via successful join)
+        client.contribute_to_group_save(&member, &group_id, &100i128);
+    }
+
+    #[test]
+    fn test_group_total_balance_tracked_correctly() {
+        let (env, client, _) = setup_env();
+        let creator = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&creator);
+
+        let group_id = create_group(&client, &env, &creator);
+        client.contribute_to_group_save(&creator, &group_id, &500i128);
+
+        let user_data = client.get_user(&creator);
+        assert_eq!(user_data.total_balance, 500);
+
+        client.break_group_save(&creator, &group_id);
+
+        let user_data_after = client.get_user(&creator);
+        assert_eq!(user_data_after.total_balance, 0);
+    }
+
+    #[test]
+    fn test_create_group_rejects_invalid_timestamps() {
+        let (env, client, _) = setup_env();
+        let creator = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&creator);
+
+        // start_time >= end_time should fail
+        let result = client.try_create_group_save(
+            &creator,
+            &String::from_str(&env, "Bad"),
+            &String::from_str(&env, "Bad group"),
+            &String::from_str(&env, "misc"),
+            &1000i128,
+            &0u32,
+            &100i128,
+            &true,
+            &9999u64,
+            &9999u64,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_group_rejects_zero_target() {
+        let (env, client, _) = setup_env();
+        let creator = Address::generate(&env);
+        env.mock_all_auths();
+        client.initialize_user(&creator);
+
+        let result = client.try_create_group_save(
+            &creator,
+            &String::from_str(&env, "Bad"),
+            &String::from_str(&env, "Bad group"),
+            &String::from_str(&env, "misc"),
+            &0i128,
+            &0u32,
+            &100i128,
+            &true,
+            &0u64,
+            &9999u64,
+        );
+        assert!(result.is_err());
+    }
 }

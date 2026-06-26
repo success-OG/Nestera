@@ -1,6 +1,15 @@
-import { IsString, IsOptional, IsEnum, IsDateString, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+  IsNumber,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AuditAction, AuditResourceType } from '../../../common/entities/audit-log.entity';
+import {
+  AuditAction,
+  AuditResourceType,
+} from '../../../common/entities/audit-log.entity';
 
 export class AuditLogFilterDto {
   @ApiPropertyOptional()
@@ -75,7 +84,10 @@ export class AuditLogExportDto {
   @IsDateString()
   toDate?: string;
 
-  @ApiPropertyOptional({ description: 'Format for export', enum: ['csv', 'json'] })
+  @ApiPropertyOptional({
+    description: 'Format for export',
+    enum: ['csv', 'json'],
+  })
   @IsOptional()
   @IsString()
   format?: string;

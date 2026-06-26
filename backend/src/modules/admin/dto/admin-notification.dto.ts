@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsDateString, IsNumber, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+  IsDateString,
+  IsNumber,
+  IsArray,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum NotificationChannel {
@@ -41,17 +49,26 @@ export class NotificationFilterDto {
 }
 
 export class UserTargetDto {
-  @ApiPropertyOptional({ description: 'Filter by user role', enum: ['USER', 'ADMIN'] })
+  @ApiPropertyOptional({
+    description: 'Filter by user role',
+    enum: ['USER', 'ADMIN'],
+  })
   @IsOptional()
   @IsArray()
   roles?: string[];
 
-  @ApiPropertyOptional({ description: 'Filter by KYC status', enum: ['NOT_SUBMITTED', 'PENDING', 'APPROVED', 'REJECTED'] })
+  @ApiPropertyOptional({
+    description: 'Filter by KYC status',
+    enum: ['NOT_SUBMITTED', 'PENDING', 'APPROVED', 'REJECTED'],
+  })
   @IsOptional()
   @IsArray()
   kycStatus?: string[];
 
-  @ApiPropertyOptional({ description: 'Filter by user tier', enum: ['FREE', 'VERIFIED', 'PREMIUM', 'ENTERPRISE'] })
+  @ApiPropertyOptional({
+    description: 'Filter by user tier',
+    enum: ['FREE', 'VERIFIED', 'PREMIUM', 'ENTERPRISE'],
+  })
   @IsOptional()
   @IsArray()
   tiers?: string[];
@@ -83,12 +100,19 @@ export class BroadcastNotificationDto {
   @IsNotEmpty()
   message: string;
 
-  @ApiPropertyOptional({ description: 'Notification channels to use', enum: ['EMAIL', 'IN_APP', 'PUSH'], isArray: true })
+  @ApiPropertyOptional({
+    description: 'Notification channels to use',
+    enum: ['EMAIL', 'IN_APP', 'PUSH'],
+    isArray: true,
+  })
   @IsOptional()
   @IsArray()
   channels?: NotificationChannel[];
 
-  @ApiPropertyOptional({ description: 'Target specific users or groups', type: UserTargetDto })
+  @ApiPropertyOptional({
+    description: 'Target specific users or groups',
+    type: UserTargetDto,
+  })
   @IsOptional()
   target?: UserTargetDto;
 }
@@ -98,7 +122,9 @@ export class ScheduleNotificationDto extends BroadcastNotificationDto {
   @IsDateString()
   scheduledAt: string;
 
-  @ApiPropertyOptional({ description: 'Timezone for scheduling (defaults to UTC)' })
+  @ApiPropertyOptional({
+    description: 'Timezone for scheduling (defaults to UTC)',
+  })
   @IsOptional()
   @IsString()
   timezone?: string;
@@ -115,11 +141,16 @@ export class PreviewNotificationDto {
   @IsNotEmpty()
   message: string;
 
-  @ApiPropertyOptional({ description: 'Target users for preview', type: UserTargetDto })
+  @ApiPropertyOptional({
+    description: 'Target users for preview',
+    type: UserTargetDto,
+  })
   @IsOptional()
   target?: UserTargetDto;
 
-  @ApiPropertyOptional({ description: 'Number of users to preview (default 5)' })
+  @ApiPropertyOptional({
+    description: 'Number of users to preview (default 5)',
+  })
   @IsOptional()
   @IsNumber()
   previewCount?: number;

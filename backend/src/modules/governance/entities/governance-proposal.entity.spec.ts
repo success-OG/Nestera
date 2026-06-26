@@ -1,7 +1,9 @@
 import {
   GovernanceProposal,
+  ProposalAttachmentType,
   ProposalStatus,
   ProposalCategory,
+  ProposalType,
 } from './governance-proposal.entity';
 import { Vote, VoteDirection } from './vote.entity';
 
@@ -74,5 +76,32 @@ describe('GovernanceProposal Entity', () => {
     expect(proposal.proposer).toBe('0xabcd');
     expect(proposal.startBlock).toBe(1000000);
     expect(proposal.endBlock).toBe(1100000);
+  });
+
+  it('should support structured proposal metadata', () => {
+    const proposal = new GovernanceProposal();
+    proposal.type = ProposalType.TREASURY_ALLOCATION;
+    proposal.action = {
+      recipient: 'GRECIPIENT123',
+      amount: 5000,
+      asset: 'USDC',
+    };
+    proposal.attachments = [
+      {
+        name: 'Treasury memo',
+        url: 'https://example.com/memo.pdf',
+        type: ProposalAttachmentType.DOCUMENT,
+      },
+    ];
+    proposal.requiredQuorum = '5000.00000000';
+    proposal.quorumBps = 5000;
+    proposal.proposalThreshold = '100.00000000';
+
+    expect(proposal.type).toBe(ProposalType.TREASURY_ALLOCATION);
+    expect(proposal.action?.recipient).toBe('GRECIPIENT123');
+    expect(proposal.attachments[0].type).toBe(ProposalAttachmentType.DOCUMENT);
+    expect(proposal.requiredQuorum).toBe('5000.00000000');
+    expect(proposal.quorumBps).toBe(5000);
+    expect(proposal.proposalThreshold).toBe('100.00000000');
   });
 });

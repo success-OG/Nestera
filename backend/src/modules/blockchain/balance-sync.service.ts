@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Inject,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -140,7 +146,9 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
 
   unsubscribe(publicKey: string): void {
     if (!this.handles.has(publicKey)) {
-      this.logger.debug(`unsubscribe called for unknown account ${publicKey}, skipping`);
+      this.logger.debug(
+        `unsubscribe called for unknown account ${publicKey}, skipping`,
+      );
       return;
     }
 
@@ -162,7 +170,9 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
     const accounts = Array.from(this.handles.entries()).map(([, handle]) => {
       const streamUptimeSeconds =
         handle.connected && handle.metrics.connectedAt
-          ? Math.floor((Date.now() - handle.metrics.connectedAt.getTime()) / 1000)
+          ? Math.floor(
+              (Date.now() - handle.metrics.connectedAt.getTime()) / 1000,
+            )
           : handle.metrics.streamUptimeSeconds;
 
       return {
@@ -172,7 +182,10 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
     });
 
     const anyFallbackActive = accounts.some((a) => a.fallbackActive);
-    const totalReconnects = accounts.reduce((sum, a) => sum + a.reconnectCount, 0);
+    const totalReconnects = accounts.reduce(
+      (sum, a) => sum + a.reconnectCount,
+      0,
+    );
 
     return { accounts, anyFallbackActive, totalReconnects };
   }
@@ -182,7 +195,9 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
    * For each asset balance, compare against the cached value and emit
    * a BalanceChangedEvent if the balance has changed (Requirements 3.1, 3.3, 3.4).
    */
-  private async processAccountUpdate(accountRecord: Horizon.AccountResponse): Promise<void> {
+  private async processAccountUpdate(
+    accountRecord: Horizon.AccountResponse,
+  ): Promise<void> {
     const accountId = accountRecord.account_id;
 
     for (const balance of accountRecord.balances) {
@@ -192,7 +207,10 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
           : (balance as Horizon.HorizonApi.BalanceLineAsset).asset_code;
 
       const newBalance = balance.balance;
-      const previousBalance = await this.readBalanceFromCache(accountId, assetCode);
+      const previousBalance = await this.readBalanceFromCache(
+        accountId,
+        assetCode,
+      );
 
       if (newBalance !== previousBalance) {
         await this.writeBalanceToCache(accountId, assetCode, newBalance);
@@ -221,7 +239,10 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
   ): Promise<void> {
     const key = `balance:${publicKey}:${assetCode}`;
     try {
-      const value = JSON.stringify({ balance, updatedAt: new Date().toISOString() });
+      const value = JSON.stringify({
+        balance,
+        updatedAt: new Date().toISOString(),
+      });
       const ttl = this.cacheTtlSeconds * 1000; // cache-manager uses milliseconds
       await this.cacheManager.set(key, value, ttl);
     } catch (err) {
@@ -273,7 +294,9 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
         onmessage: (accountRecord) => {
           handle.connected = true;
           handle.metrics.connectedAt = handle.metrics.connectedAt ?? new Date();
-          this.processAccountUpdate(accountRecord as unknown as Horizon.AccountResponse).catch((err) =>
+          this.processAccountUpdate(
+            accountRecord as unknown as Horizon.AccountResponse,
+          ).catch((err) =>
             this.logger.error(
               `Error processing account update for ${publicKey}: ${(err as Error).message}`,
             ),
@@ -351,8 +374,13 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
     handle.pollTimer = setInterval(async () => {
       try {
         const horizonServer = this.stellarService.getHorizonServer();
-        const account = await horizonServer.accounts().accountId(publicKey).call();
-        await this.processAccountUpdate(account as unknown as Horizon.AccountResponse);
+        const account = await horizonServer
+          .accounts()
+          .accountId(publicKey)
+          .call();
+        await this.processAccountUpdate(
+          account as unknown as Horizon.AccountResponse,
+        );
       } catch (err) {
         this.logger.warn(
           `Polling fallback error for ${publicKey}: ${(err as Error).message}`,
@@ -386,9 +414,12 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
   private async persistMetrics(): Promise<void> {
     try {
       const summary = this.getMetricsSummary();
-      let record = await this.protocolMetricsRepo.findOne({ where: {}, order: { createdAt: 'DESC' } });
+      const record = await this.protocolMetricsRepo.findOne({
+        where: {},
+        order: { createdAt: 'DESC' },
+      });
       if (record) {
-        record.connectionMetrics = summary as any;
+        record.connectionMetrics = summary;
         await this.protocolMetricsRepo.save(record);
       } else {
         const newRecord = this.protocolMetricsRepo.create({
@@ -396,12 +427,14 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
           totalValueLockedUsd: 0,
           totalValueLockedXlm: 0,
           savingsProductCount: 0,
-          connectionMetrics: summary as any,
+          connectionMetrics: summary,
         });
         await this.protocolMetricsRepo.save(newRecord);
       }
     } catch (err) {
-      this.logger.warn(`Failed to persist connection metrics: ${(err as Error).message}`);
+      this.logger.warn(
+        `Failed to persist connection metrics: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -412,6 +445,7 @@ export class BalanceSyncService implements OnModuleInit, OnModuleDestroy {
     const value = this.configService.get<T>(key);
     if (value === undefined || value === null) {
       this.logger.warn(
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         `Config key "${key}" is absent. Using default: ${defaultValue}`,
       );
       return defaultValue;

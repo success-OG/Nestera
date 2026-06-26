@@ -78,7 +78,7 @@ describe('AdminUsersService', () => {
         page: 1,
         limit: 20,
         skip: 0,
-      } as any);
+      });
       expect(result.meta).toEqual({ total: 1, page: 1, limit: 20 });
       expect(result.data).toHaveLength(1);
       expect(result.data[0].email).toBe('test@nestera.io');
@@ -94,7 +94,7 @@ describe('AdminUsersService', () => {
         page: 1,
         limit: 20,
         skip: 0,
-      } as any);
+      });
       expect(result.data[0].transactionCount).toBe(10);
     });
   });

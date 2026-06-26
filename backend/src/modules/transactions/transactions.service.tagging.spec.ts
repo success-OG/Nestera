@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TransactionsService } from './transactions.service';
 import { LedgerTransaction } from '../blockchain/entities/transaction.entity';
+import { AutoCategorizationService } from './auto-categorization.service';
+import { TransactionSavedSearch } from './entities/transaction-saved-search.entity';
 
 describe('TransactionsService tagging', () => {
   let service: TransactionsService;
@@ -13,6 +15,10 @@ describe('TransactionsService tagging', () => {
     findBy: jest.fn(),
   };
 
+  const mockSavedSearchRepository: any = {
+    createQueryBuilder: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -20,6 +26,14 @@ describe('TransactionsService tagging', () => {
         {
           provide: getRepositoryToken(LedgerTransaction),
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(TransactionSavedSearch),
+          useValue: mockSavedSearchRepository,
+        },
+        {
+          provide: AutoCategorizationService,
+          useValue: { categorize: jest.fn() },
         },
       ],
     }).compile();

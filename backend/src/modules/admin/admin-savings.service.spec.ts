@@ -76,7 +76,7 @@ describe('AdminSavingsService', () => {
         maxAmount: 5000,
         tenureMonths: 6,
       };
-      const result = await service.createProduct(dto as any);
+      const result = await service.createProduct(dto);
       expect(productRepo.save).toHaveBeenCalled();
       expect(result.name).toBe('Plan A');
     });
@@ -120,7 +120,7 @@ describe('AdminSavingsService', () => {
     it('updates product fields', async () => {
       const result = await service.updateProduct('prod-1', {
         name: 'Updated',
-      } as any);
+      });
       expect(productRepo.save).toHaveBeenCalled();
       expect(result).toBeDefined();
     });
@@ -187,7 +187,7 @@ describe('AdminSavingsService', () => {
         page: 1,
         limit: 10,
         skip: 0,
-      } as any);
+      });
       expect(result.meta.total).toBe(1);
       expect(result.data).toHaveLength(1);
     });

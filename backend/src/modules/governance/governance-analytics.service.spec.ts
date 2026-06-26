@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { GovernanceAnalyticsService } from './governance-analytics.service';
-import { GovernanceProposal, ProposalStatus } from './entities/governance-proposal.entity';
+import {
+  GovernanceProposal,
+  ProposalStatus,
+} from './entities/governance-proposal.entity';
 import { Vote } from './entities/vote.entity';
 
 describe('GovernanceAnalyticsService', () => {
@@ -47,7 +50,9 @@ describe('GovernanceAnalyticsService', () => {
       ],
     }).compile();
 
-    service = module.get<GovernanceAnalyticsService>(GovernanceAnalyticsService);
+    service = module.get<GovernanceAnalyticsService>(
+      GovernanceAnalyticsService,
+    );
   });
 
   it('should be defined', () => {
@@ -59,10 +64,12 @@ describe('GovernanceAnalyticsService', () => {
       mockQueryBuilder.getRawOne
         .mockResolvedValueOnce({ count: '100' }) // totalUniqueVoters
         .mockResolvedValueOnce({ count: '50' }); // activeVoters (last 30 days)
-      
+
       voteRepo.count.mockResolvedValue(500);
       proposalRepo.count.mockResolvedValue(10);
-      mockQueryBuilder.getRawMany.mockResolvedValue([{ proposalId: '1', totalWeight: '60000' }]);
+      mockQueryBuilder.getRawMany.mockResolvedValue([
+        { proposalId: '1', totalWeight: '60000' },
+      ]);
 
       const result = await service.getParticipationStats();
 
@@ -79,7 +86,7 @@ describe('GovernanceAnalyticsService', () => {
       proposalRepo.count
         .mockResolvedValueOnce(20) // total
         .mockResolvedValueOnce(15); // passed
-      
+
       mockQueryBuilder.getRawOne.mockResolvedValue({ totalWeight: '1000000' });
       mockQueryBuilder.getRawMany.mockResolvedValue([
         { category: 'Governance', total: '10', passed: '8', failed: '2' },

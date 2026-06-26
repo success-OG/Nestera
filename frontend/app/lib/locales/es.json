@@ -1,0 +1,95 @@
+{
+  "navbar": {
+    "home": "Inicio",
+    "features": "Características",
+    "about": "Acerca de",
+    "contact": "Contacto",
+    "language": "Idioma",
+    "english": "Inglés",
+    "spanish": "Español"
+  },
+  "hero": {
+    "title": "Ahorra Mejor, Juntos",
+    "subtitle": "Una plataforma de ahorros impulsada por la comunidad y la tecnología blockchain",
+    "button": "Comenzar"
+  },
+  "newsletter": {
+    "title": "¿Quieres recibir actualizaciones o noticias?",
+    "description": "Regístrate para nuestro Newsletter",
+    "placeholder": "Ingresa tu email",
+    "submit": "Enviar",
+    "success": "¡Gracias por suscribirte!"
+  },
+  "support": {
+    "title": "Contactar Soporte",
+    "name": "Nombre",
+    "email": "Correo Electrónico",
+    "subject": "Asunto",
+    "message": "Mensaje",
+    "placeholder": {
+      "name": "Tu nombre",
+      "email": "tu.email@ejemplo.com",
+      "subject": "¿En qué podemos ayudarte?",
+      "message": "Por favor describe tu problema o pregunta..."
+    },
+    "submit": "Enviar Mensaje",
+    "success": "¡Gracias por tu mensaje! Nos pondremos en contacto contigo pronto."
+  },
+  "settings": {
+    "title": "Configuración",
+    "description": "Administra tus preferencias de cuenta",
+    "notifications": "Notificaciones",
+    "emailNotifications": "Notificaciones por Email",
+    "emailNotificationsDesc": "Recibe emails sobre eventos importantes de la cuenta",
+    "inAppNotifications": "Notificaciones en la App",
+    "inAppNotificationsDesc": "Mostrar notificaciones dentro de la aplicación",
+    "sweepNotifications": "Notificaciones de Sorteos",
+    "sweepNotificationsDesc": "Recibe actualizaciones sobre sorteos y promociones",
+    "claimNotifications": "Notificaciones de Reclamo",
+    "claimNotificationsDesc": "Notifica cuando hay recompensas disponibles para reclamar",
+    "yieldNotifications": "Notificaciones de Rendimiento",
+    "yieldNotificationsDesc": "Recibe actualizaciones sobre cambios en el rendimiento y oportunidades",
+    "milestoneNotifications": "Notificaciones de Hitos de Metas",
+    "milestoneNotificationsDesc": "Recibe mensajes celebratorios cuando las metas llegan al 25%, 50%, 75% y 100%",
+    "save": "Guardar Preferencias",
+    "saving": "Guardando...",
+    "success": "¡Preferencias guardadas exitosamente!"
+  },
+  "goals": {
+    "createGoal": "Crear Nueva Meta",
+    "goalName": "Nombre de la Meta",
+    "goalNamePlaceholder": "ej. Fondo de Emergencia",
+    "category": "Categoría",
+    "targetAmount": "Monto Objetivo",
+    "targetAmountPlaceholder": "$15,000",
+    "startingAmount": "Monto Inicial",
+    "startingAmountPlaceholder": "$0 (opcional)",
+    "targetDate": "Fecha Objetivo",
+    "frequency": "Frecuencia de Aporte",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+    "autoSave": "Activar ahorro automático",
+    "routeToYield": "Dirigir a fondo de rendimiento",
+    "routeToYieldDesc": "Gana 5% APY en tus ahorros",
+    "note": "Nota (Opcional)",
+    "notePlaceholder": "Agrega una nota personal o descripción...",
+    "cancel": "Cancelar",
+    "create": "Crear Meta",
+    "creating": "Creando Meta...",
+    "success": "¡Meta creada exitosamente!",
+    "tips": {
+      "title": "Consejos para el éxito",
+      "realisticTimeline": "Elige una línea de tiempo realista. Los plazos más cortos ayudan al impulso, pero manténlo alcanzable.",
+      "startSmall": "Empieza poco a poco. Incluso los aportes modestos generan consistencia.",
+      "nameClearly": "Nómbrala claramente. Una meta específica se siente más tangible y motivadora."
+    }
+  },
+  "forms": {
+    "required": "Este campo es obligatorio",
+    "invalidEmail": "Correo electrónico inválido",
+    "minLength": "El campo es demasiado corto",
+    "maxLength": "El campo es demasiado largo",
+    "minValue": "El valor es demasiado pequeño",
+    "maxValue": "El valor es demasiado grande"
+  }
+}

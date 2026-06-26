@@ -1,0 +1,128 @@
+{
+  "metadata": {
+    "title": "Nestera - Ahorros descentralizados en Stellar",
+    "description": "Ahorros seguros y transparentes impulsados por Stellar y Soroban."
+  },
+  "Navbar": {
+    "features": "Funciones",
+    "savings": "Ahorros",
+    "dashboard": "Panel",
+    "community": "Comunidad",
+    "docs": "Documentación",
+    "language": "Idioma",
+    "english": "Inglés",
+    "spanish": "Español",
+    "connectWallet": "Conectar billetera",
+    "openMenu": "Abrir menú principal"
+  },
+  "forms": {
+    "invalidEmail": "Ingresa un correo electrónico válido.",
+    "required": "Este campo es obligatorio.",
+    "minLength": "Debe tener al menos {min} caracteres.",
+    "maxLength": "No debe superar {max} caracteres.",
+    "minValue": "Debe ser mayor que 0.",
+    "nonNegative": "Debe ser 0 o mayor.",
+    "futureDate": "Elige una fecha futura."
+  },
+  "Newsletter": {
+    "title": "Suscríbete a nuestro boletín",
+    "description": "Recibe las últimas novedades y noticias de Nestera.",
+    "placeholder": "Ingresa tu correo",
+    "submit": "Suscribirse",
+    "success": "Gracias por suscribirte."
+  },
+  "Support": {
+    "title": "Contactar soporte",
+    "nameLabel": "Nombre",
+    "emailLabel": "Correo electrónico",
+    "subjectLabel": "Asunto",
+    "messageLabel": "Mensaje",
+    "namePlaceholder": "Tu nombre",
+    "emailPlaceholder": "tu.correo@ejemplo.com",
+    "subjectPlaceholder": "¿Cómo podemos ayudar?",
+    "messagePlaceholder": "Describe tu problema o pregunta...",
+    "sendMessage": "Enviar mensaje",
+    "sending": "Enviando...",
+    "success": "Gracias por tu mensaje. Te responderemos pronto.",
+    "validation": {
+      "nameTooShort": "El nombre debe tener al menos 2 caracteres.",
+      "subjectTooShort": "El asunto debe tener al menos 5 caracteres.",
+      "messageTooShort": "El mensaje debe tener al menos 10 caracteres."
+    }
+  },
+  "goals": {
+    "createGoal": "Crear objetivo",
+    "goalName": "Nombre del objetivo",
+    "goalNamePlaceholder": "Fondo de emergencia",
+    "category": "Categoría",
+    "selectCategory": "Selecciona una categoría",
+    "targetAmount": "Monto objetivo",
+    "targetAmountPlaceholder": "Ingresa el monto objetivo",
+    "startingAmount": "Monto inicial",
+    "targetDate": "Fecha objetivo",
+    "frequency": "Frecuencia de aporte",
+    "selectFrequency": "Selecciona la frecuencia",
+    "weekly": "Semanal",
+    "monthly": "Mensual",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Agrega una nota breve sobre este objetivo",
+    "autoSave": "Activar ahorro automático",
+    "routeToYield": "Enviar a rendimiento",
+    "summary": "Resumen del objetivo",
+    "notSet": "Sin definir",
+    "success": "Objetivo creado correctamente.",
+    "creating": "Creando...",
+    "create": "Crear objetivo",
+    "tips": {
+      "title": "Consejos para objetivos",
+      "realisticTimeline": "Define un plazo realista para alcanzar tu objetivo.",
+      "startSmall": "Empieza con aportes pequeños y alcanzables.",
+      "nameClearly": "Dale a tu objetivo un nombre claro."
+    }
+  },
+  "Settings": {
+    "title": "Configuración",
+    "description": "Gestiona las preferencias de tu cuenta",
+    "notifications": "Notificaciones",
+    "emailNotifications": "Notificaciones por correo",
+    "emailNotificationsDescription": "Recibe correos sobre eventos importantes de la cuenta",
+    "inAppNotifications": "Notificaciones en la app",
+    "inAppNotificationsDescription": "Muestra notificaciones dentro de la aplicación",
+    "sweepNotifications": "Notificaciones de sorteos",
+    "sweepNotificationsDescription": "Recibe actualizaciones sobre sorteos y promociones",
+    "claimNotifications": "Notificaciones de recompensas",
+    "claimNotificationsDescription": "Avisa cuando haya recompensas disponibles para reclamar",
+    "yieldNotifications": "Notificaciones de rendimiento",
+    "yieldNotificationsDescription": "Recibe novedades sobre cambios y oportunidades de rendimiento",
+    "milestoneNotifications": "Notificaciones de hitos",
+    "milestoneNotificationsDescription": "Recibe mensajes cuando tus objetivos lleguen al 25%, 50%, 75% y 100%",
+    "save": "Guardar preferencias",
+    "saving": "Guardando...",
+    "success": "Preferencias guardadas correctamente."
+  },
+  "Footer": {
+    "tagline": "Impulsando el ahorro global con tecnología descentralizada.",
+    "product": "Producto",
+    "company": "Compañía",
+    "community": "Comunidad",
+    "productLinks": {
+      "flexibleSavings": "Ahorros flexibles",
+      "lockedSavings": "Ahorros bloqueados",
+      "goalFund": "Fondo de objetivos",
+      "groupSavings": "Ahorros grupales"
+    },
+    "companyLinks": {
+      "about": "Acerca de",
+      "blog": "Blog",
+      "careers": "Empleos",
+      "press": "Prensa"
+    },
+    "communityLinks": {
+      "discord": "Discord",
+      "twitter": "Twitter",
+      "github": "GitHub",
+      "docs": "Documentación"
+    },
+    "copyright": "© 2026 Nestera. Todos los derechos reservados."
+  }
+}

@@ -7,9 +7,11 @@ import { Transaction } from '../transactions/entities/transaction.entity';
 import { Notification } from '../notifications/entities/notification.entity';
 import { ReferralsService } from './referrals.service';
 import { CampaignsService } from './campaigns.service';
+import { ReferralAnalyticsService } from './referral-analytics.service';
 import { ReferralsController } from './referrals.controller';
 import { AdminReferralsController } from './admin-referrals.controller';
 import { UserReferralsController } from './user-referrals.controller';
+import { ReferralAnalyticsController } from './referral-analytics.controller';
 import { ReferralEventsListener } from './referral-events.listener';
 
 @Module({
@@ -22,8 +24,18 @@ import { ReferralEventsListener } from './referral-events.listener';
       Notification,
     ]),
   ],
-  controllers: [ReferralsController, AdminReferralsController, UserReferralsController],
-  providers: [ReferralsService, CampaignsService, ReferralEventsListener],
-  exports: [ReferralsService, CampaignsService],
+  controllers: [
+    ReferralsController,
+    AdminReferralsController,
+    UserReferralsController,
+    ReferralAnalyticsController,
+  ],
+  providers: [
+    ReferralsService,
+    CampaignsService,
+    ReferralAnalyticsService,
+    ReferralEventsListener,
+  ],
+  exports: [ReferralsService, CampaignsService, ReferralAnalyticsService],
 })
 export class ReferralsModule {}

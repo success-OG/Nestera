@@ -3,6 +3,24 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
+const isProduction = process.env.NODE_ENV === 'production';
+
+const poolExtra = {
+  max: parseInt(
+    process.env.DATABASE_POOL_MAX || (isProduction ? '30' : '10'),
+    10,
+  ),
+  min: parseInt(
+    process.env.DATABASE_POOL_MIN || (isProduction ? '5' : '2'),
+    10,
+  ),
+  idleTimeoutMillis: parseInt(process.env.DATABASE_IDLE_TIMEOUT || '30000', 10),
+  connectionTimeoutMillis: parseInt(
+    process.env.DATABASE_CONNECTION_TIMEOUT || '2000',
+    10,
+  ),
+};
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
@@ -15,4 +33,5 @@ export const AppDataSource = new DataSource({
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
   logging: false,
+  extra: poolExtra,
 });

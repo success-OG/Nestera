@@ -3,19 +3,30 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "prettier --write \"backend/src/**/*.{ts,tsx}\" \"frontend/app/**/*.{ts,tsx}\" \"frontend/components/**/*.{ts,tsx}\"",
+    "lint": "eslint \"backend/src/**/*.{ts,tsx}\" \"frontend/app/**/*.{ts,tsx}\" \"frontend/components/**/*.{ts,tsx}\" --fix"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.0.2",
     "husky": "^9.0.0",
     "lint-staged": "^15.0.0",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "typescript": "^6.0.3"
   },
   "lint-staged": {
     "backend/src/**/*.{ts,tsx}": [
-      "npx prettier --write",
+      "prettier --write",
       "backend/node_modules/.bin/eslint --fix --config backend/eslint.config.mjs"
+    ],
+    "frontend/app/**/*.{ts,tsx}": [
+      "prettier --write",
+      "frontend/node_modules/.bin/eslint --fix --config frontend/.eslintrc.cjs"
+    ],
+    "frontend/components/**/*.{ts,tsx}": [
+      "prettier --write",
+      "frontend/node_modules/.bin/eslint --fix --config frontend/.eslintrc.cjs"
     ]
   },
   "dependencies": {

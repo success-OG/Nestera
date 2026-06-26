@@ -119,24 +119,28 @@ export class PostmanCollectionGenerator {
     if (openapi.paths) {
       const pathGroups: { [key: string]: PostmanItem[] } = {};
 
-      Object.entries(openapi.paths).forEach(([path, pathItem]: [string, any]) => {
-        const tag = pathItem.get?.tags?.[0] || 'General';
+      Object.entries(openapi.paths).forEach(
+        ([path, pathItem]: [string, any]) => {
+          const tag = pathItem.get?.tags?.[0] || 'General';
 
-        if (!pathGroups[tag]) {
-          pathGroups[tag] = [];
-        }
-
-        Object.entries(pathItem).forEach(([method, operation]: [string, any]) => {
-          if (['get', 'post', 'put', 'delete', 'patch'].includes(method)) {
-            const item = this.createPostmanItem(
-              path,
-              method.toUpperCase(),
-              operation,
-            );
-            pathGroups[tag].push(item);
+          if (!pathGroups[tag]) {
+            pathGroups[tag] = [];
           }
-        });
-      });
+
+          Object.entries(pathItem).forEach(
+            ([method, operation]: [string, any]) => {
+              if (['get', 'post', 'put', 'delete', 'patch'].includes(method)) {
+                const item = this.createPostmanItem(
+                  path,
+                  method.toUpperCase(),
+                  operation,
+                );
+                pathGroups[tag].push(item);
+              }
+            },
+          );
+        },
+      );
 
       Object.entries(pathGroups).forEach(([tag, items]) => {
         collection.item.push({
@@ -173,7 +177,8 @@ export class PostmanCollectionGenerator {
     };
 
     if (operation.requestBody) {
-      const schema = operation.requestBody.content?.['application/json']?.schema;
+      const schema =
+        operation.requestBody.content?.['application/json']?.schema;
       if (schema) {
         request.body = {
           mode: 'raw',
@@ -213,9 +218,11 @@ export class PostmanCollectionGenerator {
     if (schema.type === 'object') {
       const obj: any = {};
       if (schema.properties) {
-        Object.entries(schema.properties).forEach(([key, prop]: [string, any]) => {
-          obj[key] = this.generateExample(prop);
-        });
+        Object.entries(schema.properties).forEach(
+          ([key, prop]: [string, any]) => {
+            obj[key] = this.generateExample(prop);
+          },
+        );
       }
       return obj;
     }
@@ -232,16 +239,18 @@ export class PostmanCollectionGenerator {
     const responses: PostmanResponse[] = [];
 
     if (operation.responses) {
-      Object.entries(operation.responses).forEach(([code, response]: [string, any]) => {
-        const schema = response.content?.['application/json']?.schema;
-        responses.push({
-          name: response.description || `Response ${code}`,
-          status: response.description || 'OK',
-          code: parseInt(code),
-          header: [{ key: 'Content-Type', value: 'application/json' }],
-          body: JSON.stringify(this.generateExample(schema), null, 2),
-        });
-      });
+      Object.entries(operation.responses).forEach(
+        ([code, response]: [string, any]) => {
+          const schema = response.content?.['application/json']?.schema;
+          responses.push({
+            name: response.description || `Response ${code}`,
+            status: response.description || 'OK',
+            code: parseInt(code),
+            header: [{ key: 'Content-Type', value: 'application/json' }],
+            body: JSON.stringify(this.generateExample(schema), null, 2),
+          });
+        },
+      );
     }
 
     return responses;

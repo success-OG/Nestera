@@ -11,7 +11,11 @@ import {
   WithdrawalStatus,
 } from '../savings/entities/withdrawal-request.entity';
 import { User } from '../user/entities/user.entity';
-import { AuditLog } from '../../common/entities/audit-log.entity';
+import {
+  AuditLog,
+  AuditAction,
+  AuditResourceType,
+} from '../../common/entities/audit-log.entity';
 import { MailService } from '../mail/mail.service';
 import { SavingsService } from '../savings/savings.service';
 import { PageOptionsDto } from '../../common/dto/page-options.dto';
@@ -112,10 +116,10 @@ export class AdminWithdrawalService {
         correlationId,
         endpoint: `/admin/withdrawals/${id}/approve`,
         method: 'POST',
-        action: 'APPROVE',
+        action: AuditAction.APPROVE,
         actor: actor.email,
         resourceId: id,
-        resourceType: 'WITHDRAWAL_REQUEST',
+        resourceType: AuditResourceType.WITHDRAWAL_REQUEST,
         statusCode: 200,
         durationMs: Date.now() - startTime,
         success: true,
@@ -129,10 +133,10 @@ export class AdminWithdrawalService {
         correlationId,
         endpoint: `/admin/withdrawals/${id}/approve`,
         method: 'POST',
-        action: 'APPROVE',
+        action: AuditAction.APPROVE,
         actor: actor.email,
         resourceId: id,
-        resourceType: 'WITHDRAWAL_REQUEST',
+        resourceType: AuditResourceType.WITHDRAWAL_REQUEST,
         statusCode:
           error instanceof NotFoundException
             ? 404
@@ -202,10 +206,10 @@ export class AdminWithdrawalService {
         correlationId,
         endpoint: `/admin/withdrawals/${id}/reject`,
         method: 'POST',
-        action: 'REJECT',
+        action: AuditAction.REJECT,
         actor: actor.email,
         resourceId: id,
-        resourceType: 'WITHDRAWAL_REQUEST',
+        resourceType: AuditResourceType.WITHDRAWAL_REQUEST,
         statusCode: 200,
         durationMs: Date.now() - startTime,
         success: true,
@@ -219,10 +223,10 @@ export class AdminWithdrawalService {
         correlationId,
         endpoint: `/admin/withdrawals/${id}/reject`,
         method: 'POST',
-        action: 'REJECT',
+        action: AuditAction.REJECT,
         actor: actor.email,
         resourceId: id,
-        resourceType: 'WITHDRAWAL_REQUEST',
+        resourceType: AuditResourceType.WITHDRAWAL_REQUEST,
         statusCode:
           error instanceof NotFoundException
             ? 404
@@ -289,20 +293,17 @@ export class AdminWithdrawalService {
     correlationId: string;
     endpoint: string;
     method: string;
-    action: string;
+    action: AuditAction;
     actor: string;
     resourceId: string;
-    resourceType: string;
+    resourceType: AuditResourceType;
     statusCode: number;
     durationMs: number;
     success: boolean;
     errorMessage: string | null;
   }): Promise<void> {
     try {
-      const auditLog = this.auditLogRepository.create({
-        ...data,
-        timestamp: new Date(),
-      });
+      const auditLog = this.auditLogRepository.create(data);
       await this.auditLogRepository.save(auditLog);
     } catch (error) {
       this.logger.error(

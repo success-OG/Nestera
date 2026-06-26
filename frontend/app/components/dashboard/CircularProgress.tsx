@@ -1,5 +1,15 @@
 import React from 'react';
 
+/**
+ * Props for the CircularProgress component
+ * 
+ * @param percentage - The progress value from 0 to 100.
+ * @param size - The diameter of the circle in pixels.
+ * @param strokeWidth - The thickness of the progress line.
+ * @param className - Additional CSS classes.
+ * @param strokeColor - The color of the progress line.
+ * @param backgroundColor - The color of the underlying track.
+ */
 interface CircularProgressProps {
   percentage: number;
   size?: number;
@@ -9,6 +19,15 @@ interface CircularProgressProps {
   backgroundColor?: string;
 }
 
+/**
+ * A circular progress bar that displays a percentage value.
+ * Features a smooth transition animation when the percentage changes.
+ * 
+ * @example
+ * ```tsx
+ * <CircularProgress percentage={75} size={120} strokeWidth={8} />
+ * ```
+ */
 const CircularProgress: React.FC<CircularProgressProps> = ({
   percentage,
   size = 140,

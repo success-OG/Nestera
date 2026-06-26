@@ -9,8 +9,14 @@ import {
   UserSubscription,
   SubscriptionStatus,
 } from '../entities/user-subscription.entity';
-import { SavingsGoal, SavingsGoalStatus } from '../entities/savings-goal.entity';
-import { Transaction, TxType } from '../../transactions/entities/transaction.entity';
+import {
+  SavingsGoal,
+  SavingsGoalStatus,
+} from '../entities/savings-goal.entity';
+import {
+  Transaction,
+  TxType,
+} from '../../transactions/entities/transaction.entity';
 import { ProductRecommendationDto } from '../dto/recommendation-response.dto';
 
 interface UserProfile {
@@ -107,13 +113,13 @@ export class RecommendationService {
       0,
     );
     const activeSubscriptionTypes = [
-      ...new Set(activeSubscriptions.map((s) => s.product?.type).filter(Boolean)),
+      ...new Set(
+        activeSubscriptions.map((s) => s.product?.type).filter(Boolean),
+      ),
     ] as SavingsProductType[];
 
     // Risk tolerance: based on product mix and withdrawal history
-    const withdrawals = transactions.filter(
-      (t) => t.type === TxType.WITHDRAW,
-    );
+    const withdrawals = transactions.filter((t) => t.type === TxType.WITHDRAW);
     const hasLockedProducts = activeSubscriptionTypes.includes(
       SavingsProductType.FIXED,
     );
@@ -153,10 +159,7 @@ export class RecommendationService {
     };
   }
 
-  private scoreProduct(
-    product: SavingsProduct,
-    profile: UserProfile,
-  ): number {
+  private scoreProduct(product: SavingsProduct, profile: UserProfile): number {
     let score = 0.5; // base score
 
     // Risk alignment (+0.2)
@@ -257,16 +260,16 @@ export class RecommendationService {
     profile: UserProfile,
   ): number {
     // Project based on user's average deposit or current invested amount
-    const principal = profile.avgTransactionAmount > 0
-      ? profile.avgTransactionAmount
-      : Number(product.minAmount);
+    const principal =
+      profile.avgTransactionAmount > 0
+        ? profile.avgTransactionAmount
+        : Number(product.minAmount);
 
     const rate = Number(product.interestRate) / 100;
     const months = product.tenureMonths || 12;
 
     // Compound interest: P * (1 + r/12)^months - P
-    const compounded =
-      principal * Math.pow(1 + rate / 12, months) - principal;
+    const compounded = principal * Math.pow(1 + rate / 12, months) - principal;
 
     return Math.max(0, compounded);
   }

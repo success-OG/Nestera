@@ -67,3 +67,20 @@ cargo build --target wasm32-unknown-unknown --release
 ```bash
 cargo test
 ```
+
+## Contract Operations
+
+The operational workflow for deployment, verification, rollback, and generated documentation lives in:
+
+- [Contract operations guide](docs/CONTRACT_OPERATIONS.md)
+- [Formal verification report](docs/FORMAL_VERIFICATION.md)
+- [Contract reference](CONTRACT_REFERENCE.md)
+
+The helper scripts are in [scripts/](scripts/):
+
+- `generate-docs.sh` assembles the generated documentation bundle.
+- `flatten-source.sh` produces a deterministic source bundle for verification.
+- `deploy.sh` builds artifacts and records deployment metadata.
+- `verify.sh` compares a deployment manifest to the local build.
+- `status.sh` prints the current deployment manifest state.
+- `rollback.sh` prepares a rollback deployment from a prior manifest.

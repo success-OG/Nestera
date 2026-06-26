@@ -2,28 +2,45 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Wallet } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Globe2, Menu, Wallet, X } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 
 interface NavLink {
   label: string;
   href: string;
 }
 
+/**
+ * Main navigation bar component.
+ * Handles responsive layout, language switching, and active link states.
+ * 
+ * @example
+ * ```tsx
+ * <Navbar />
+ * ```
+ */
 const Navbar: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+  const t = useTranslations("Navbar");
+  const locale = useLocale();
 
   const navLinks: NavLink[] = [
-    { label: "Features", href: "/features" },
-    { label: "Savings", href: "/savings" },
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Community", href: "/community" },
-    { label: "Docs", href: "/docs" },
+    { label: t("features"), href: "/features" },
+    { label: t("savings"), href: "/savings" },
+    { label: t("dashboard"), href: "/dashboard" },
+    { label: t("community"), href: "/community" },
+    { label: t("docs"), href: "/docs" },
   ];
 
   const isActiveLink = (href: string): boolean => {
-    return pathname === href || pathname?.startsWith(href + "/");
+    // Remove locale prefix for comparison
+    const cleanPathname = pathname.replace(/^\/[a-z]{2}/, "");
+    const cleanHref = href.replace(/^\/[a-z]{2}/, "");
+    return cleanPathname === cleanHref || cleanPathname?.startsWith(cleanHref + "/");
   };
 
   const navLinkBase =
@@ -35,6 +52,12 @@ const Navbar: React.FC = () => {
     "block py-3 px-3 rounded-md text-base font-medium no-underline text-slate-300 transition-all duration-200 border-l-4 border-transparent hover:text-white hover:bg-slate-800";
   const mobileLinkActive =
     "text-cyan-500 bg-slate-800 border-l-cyan-500";
+
+  const handleLanguageChange = (locale: string) => {
+    const currentPath = pathname.replace(/^\/[a-z]{2}/, "") || "/";
+    setIsLanguageMenuOpen(false);
+    router.push(`/${locale}${currentPath}`);
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-[#061a1a]">
@@ -75,8 +98,52 @@ const Navbar: React.FC = () => {
               type="button"
               className="hidden sm:inline-flex items-center justify-center py-3 px-6 rounded-full bg-[#00c9c8] text-[#061a1a] font-semibold text-sm border-none cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,212,192,0.1)] transition-all duration-200 hover:shadow-[0_10px_15px_-3px_rgba(0,212,192,0.5)] hover:scale-105"
             >
-              Connect Wallet
+              {t("connectWallet")}
             </button>
+
+            {/* Language Switcher */}
+            <div className="relative">
+              <button
+              type="button"
+              onClick={() => setIsLanguageMenuOpen((isOpen) => !isOpen)}
+              className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-white hover:text-cyan-300 focus:outline-none"
+              aria-label={t("language")}
+              aria-haspopup="true"
+              aria-expanded={isLanguageMenuOpen}
+            >
+                <Globe2 size={16} className="mr-2" aria-hidden="true" />
+                <span className="font-semibold">
+                  {locale === "en" ? t("english") : t("spanish")}
+                </span>
+                <svg className="ml-2 w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 1 0 111.414 0L10 10.586l3.293-3.293a1 1 1 0 111.414 1.414l-4 4a1 1 1 0 01-1.414 0l-4-4a1 1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+              
+              {/* Language dropdown menu */}
+              <div className={`${isLanguageMenuOpen ? "block" : "hidden"} absolute right-0 mt-2 w-48 origin-top-right rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none`}>
+                <div className="py-1">
+                  <button
+                    type="button"
+                    className="block px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    onClick={() => {
+                      handleLanguageChange("en");
+                    }}
+                  >
+                    {t("english")}
+                  </button>
+                  <button
+                    type="button"
+                    className="block px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    onClick={() => {
+                      handleLanguageChange("es");
+                    }}
+                  >
+                    {t("spanish")}
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <button
               type="button"
@@ -84,33 +151,11 @@ const Navbar: React.FC = () => {
               className="inline-flex md:hidden items-center justify-center p-2 rounded-md text-slate-400 bg-transparent border-none cursor-pointer transition-all duration-200 hover:text-white hover:bg-slate-800"
               aria-expanded={isMobileMenuOpen}
             >
-              <span className="sr-only">Open main menu</span>
+              <span className="sr-only">{t("openMenu")}</span>
               {isMobileMenuOpen ? (
-                <svg
-                  className="w-6 h-6 stroke-current stroke-2 fill-none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <X size={24} aria-hidden="true" />
               ) : (
-                <svg
-                  className="w-6 h-6 stroke-current stroke-2 fill-none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
+                <Menu size={24} aria-hidden="true" />
               )}
             </button>
           </div>
@@ -135,12 +180,12 @@ const Navbar: React.FC = () => {
               {link.label}
             </Link>
           ))}
-          <button
-            type="button"
-            className="w-full mt-4 py-3 px-6 rounded-full bg-[#00c9c8] text-[#061a1a] font-semibold text-sm border-none cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,212,192,0.1)] transition-all duration-200 hover:shadow-[0_10px_15px_-3px_rgba(0,212,192,0.5)]"
-          >
-            Connect Wallet
-          </button>
+            <button
+              type="button"
+              className="w-full mt-4 py-3 px-6 rounded-full bg-[#00c9c8] text-[#061a1a] font-semibold text-sm border-none cursor-pointer shadow-[0_10px_15px_-3px_rgba(0,212,192,0.1)] transition-all duration-200 hover:shadow-[0_10px_15px_-3px_rgba(0,212,192,0.5)]"
+            >
+              {t("connectWallet")}
+            </button>
         </div>
       </div>
     </nav>

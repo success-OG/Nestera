@@ -4,14 +4,17 @@ import * as redisStore from 'cache-manager-redis-store';
 import { ConfigService } from '@nestjs/config';
 import { CacheStrategyService } from './cache-strategy.service';
 import { CacheController } from './cache.controller';
+import { CacheWarmingService } from './cache-warming.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     NestCacheModule.registerAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
-        
+
         if (redisUrl) {
           return {
             store: redisStore,
@@ -27,8 +30,8 @@ import { CacheController } from './cache.controller';
       },
     }),
   ],
-  providers: [CacheStrategyService],
+  providers: [CacheStrategyService, CacheWarmingService],
   controllers: [CacheController],
-  exports: [CacheStrategyService, NestCacheModule],
+  exports: [CacheStrategyService, NestCacheModule, CacheWarmingService],
 })
 export class CacheModule {}

@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Notification, NotificationType } from '../notifications/entities/notification.entity';
+import {
+  Notification,
+  NotificationType,
+} from '../notifications/entities/notification.entity';
 import { ReferralsService } from './referrals.service';
 
 @Injectable()
@@ -25,8 +28,13 @@ export class ReferralEventsListener {
   }
 
   @OnEvent('user.signup-with-referral')
-  async handleSignupWithReferral(payload: { userId: string; referralCode: string }) {
-    this.logger.log(`Applying referral code ${payload.referralCode} for user ${payload.userId}`);
+  async handleSignupWithReferral(payload: {
+    userId: string;
+    referralCode: string;
+  }) {
+    this.logger.log(
+      `Applying referral code ${payload.referralCode} for user ${payload.userId}`,
+    );
     try {
       await this.referralsService.applyReferralCode(
         payload.referralCode,
@@ -51,7 +59,8 @@ export class ReferralEventsListener {
       userId: payload.referrerId,
       type: NotificationType.REFERRAL_COMPLETED,
       title: 'Referral Completed!',
-      message: 'Your referral has completed their first deposit. Rewards will be distributed soon.',
+      message:
+        'Your referral has completed their first deposit. Rewards will be distributed soon.',
       metadata: { referralId: payload.referralId },
     });
 

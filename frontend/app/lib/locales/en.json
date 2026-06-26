@@ -1,0 +1,95 @@
+{
+  "navbar": {
+    "home": "Home",
+    "features": "Features",
+    "about": "About",
+    "contact": "Contact",
+    "language": "Language",
+    "english": "English",
+    "spanish": "Spanish"
+  },
+  "hero": {
+    "title": "Save Smarter, Together",
+    "subtitle": "A community-driven savings platform powered by blockchain technology",
+    "button": "Get Started"
+  },
+  "newsletter": {
+    "title": "Want to receive any updates or news?",
+    "description": "Sign up for our Newsletter",
+    "placeholder": "Enter your email",
+    "submit": "Submit",
+    "success": "Thank you for subscribing!"
+  },
+  "support": {
+    "title": "Contact Support",
+    "name": "Name",
+    "email": "Email",
+    "subject": "Subject",
+    "message": "Message",
+    "placeholder": {
+      "name": "Your name",
+      "email": "your.email@example.com",
+      "subject": "How can we help?",
+      "message": "Please describe your issue or question..."
+    },
+    "submit": "Send Message",
+    "success": "Thank you for your message! We'll get back to you soon."
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your account preferences",
+    "notifications": "Notifications",
+    "emailNotifications": "Email Notifications",
+    "emailNotificationsDesc": "Receive emails about important account events",
+    "inAppNotifications": "In-app Notifications",
+    "inAppNotificationsDesc": "Show notifications inside the app",
+    "sweepNotifications": "Sweep Notifications",
+    "sweepNotificationsDesc": "Receive updates about sweepstakes and promotions",
+    "claimNotifications": "Claim Notifications",
+    "claimNotificationsDesc": "Notify when rewards are available to claim",
+    "yieldNotifications": "Yield Notifications",
+    "yieldNotificationsDesc": "Receive updates about yield changes and opportunities",
+    "milestoneNotifications": "Goal Milestone Notifications",
+    "milestoneNotificationsDesc": "Receive celebratory messages when goals reach 25%, 50%, 75%, and 100%",
+    "save": "Save Preferences",
+    "saving": "Saving...",
+    "success": "Preferences saved successfully!"
+  },
+  "goals": {
+    "createGoal": "Create New Goal",
+    "goalName": "Goal Name",
+    "goalNamePlaceholder": "e.g., Emergency Fund",
+    "category": "Category",
+    "targetAmount": "Target Amount",
+    "targetAmountPlaceholder": "$15,000",
+    "startingAmount": "Starting Amount",
+    "startingAmountPlaceholder": "$0 (optional)",
+    "targetDate": "Target Date",
+    "frequency": "Contribution Frequency",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "autoSave": "Enable auto-save",
+    "routeToYield": "Route to yield pool",
+    "routeToYieldDesc": "Earn 5% APY on your savings",
+    "note": "Note (Optional)",
+    "notePlaceholder": "Add a personal note or description...",
+    "cancel": "Cancel",
+    "create": "Create Goal",
+    "creating": "Creating Goal...",
+    "success": "Goal created successfully!",
+    "tips": {
+      "title": "Tips for success",
+      "realisticTimeline": "Pick a realistic timeline. Shorter deadlines help momentum, but keep it achievable.",
+      "startSmall": "Start small. Even modest contributions build consistency.",
+      "nameClearly": "Name it clearly. A specific goal feels more tangible and motivating."
+    }
+  },
+  "forms": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "minLength": "Field is too short",
+    "maxLength": "Field is too long",
+    "minValue": "Value is too small",
+    "maxValue": "Value is too large"
+  }
+}

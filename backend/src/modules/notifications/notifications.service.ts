@@ -1,9 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
-import { NotificationPreference } from './entities/notification-preference.entity';
+import { PageDto } from '../../common/dto/page.dto';
+import { PageMetaDto } from '../../common/dto/page-meta.dto';
+import { PageOptionsDto } from '../../common/dto/page-options.dto';
+import {
+  UserPreference,
+  DigestFrequency,
+} from './entities/notification-preference.entity';
+import { PendingNotification } from './entities/pending-notification.entity';
+import { Delegation } from '../governance/entities/delegation.entity';
 import { MailService } from '../mail/mail.service';
 import { User } from '../user/entities/user.entity';
 import { WaitlistEntry } from '../savings/entities/waitlist-entry.entity';
@@ -35,6 +43,26 @@ export interface ClaimUpdatedEvent {
   timestamp: Date;
 }
 
+export interface MilestoneAchievedEvent {
+  userId: string;
+  goalId: string;
+  milestoneId: string;
+  percentage: number;
+  label: string;
+  bonusPoints: number;
+  achievedAt: Date;
+}
+
+export interface BadgeEarnedEvent {
+  userId: string;
+  badgeId: string;
+  badgeCode: string;
+  badgeName: string;
+  points: number;
+  earnedAt: Date;
+  metadata?: Record<string, any>;
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -42,8 +70,12 @@ export class NotificationsService {
   constructor(
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
-    @InjectRepository(NotificationPreference)
-    private readonly preferenceRepository: Repository<NotificationPreference>,
+    @InjectRepository(UserPreference)
+    private readonly preferenceRepository: Repository<UserPreference>,
+    @InjectRepository(PendingNotification)
+    private readonly pendingRepository: Repository<PendingNotification>,
+    @InjectRepository(Delegation)
+    private readonly delegationRepository: Repository<Delegation>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(WaitlistEntry)
@@ -51,6 +83,7 @@ export class NotificationsService {
     @InjectRepository(WaitlistEvent)
     private readonly waitlistEventRepository: Repository<WaitlistEvent>,
     private readonly mailService: MailService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -104,6 +137,99 @@ export class NotificationsService {
     } catch (error) {
       this.logger.error(
         `Error processing sweep.completed event for user ${event.userId}`,
+        error,
+      );
+    }
+  }
+
+  /**
+   * Listen to milestone.achieved event and create in-app notification
+   */
+  @OnEvent('milestone.achieved')
+  async handleMilestoneAchieved(event: MilestoneAchievedEvent): Promise<void> {
+    this.logger.log(
+      `Processing milestone.achieved event for user ${event.userId}, goal ${event.goalId}`,
+    );
+
+    try {
+      const preferences = await this.getOrCreatePreferences(event.userId);
+
+      if (preferences.inAppNotifications) {
+        await this.createNotification({
+          userId: event.userId,
+          type: NotificationType.MILESTONE_ACHIEVED,
+          title: `Milestone Reached: ${event.percentage}%`,
+          message: `${event.label}${event.bonusPoints > 0 ? ` You earned ${event.bonusPoints} bonus points!` : ''}`,
+          metadata: {
+            goalId: event.goalId,
+            milestoneId: event.milestoneId,
+            percentage: event.percentage,
+            bonusPoints: event.bonusPoints,
+            achievedAt: event.achievedAt,
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error processing milestone.achieved event for user ${event.userId}`,
+        error,
+      );
+    }
+  }
+
+  /**
+   * Listen to badge.earned event and create in-app notification
+   */
+  @OnEvent('badge.earned')
+  async handleBadgeEarned(event: BadgeEarnedEvent): Promise<void> {
+    this.logger.log(
+      `Processing badge.earned event for user ${event.userId}, badge ${event.badgeCode}`,
+    );
+
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: event.userId },
+      });
+
+      if (!user) {
+        this.logger.warn(
+          `User ${event.userId} not found for badge notification`,
+        );
+        return;
+      }
+
+      const preferences = await this.getOrCreatePreferences(event.userId);
+
+      if (preferences.inAppNotifications) {
+        await this.createNotification({
+          userId: event.userId,
+          type: NotificationType.BADGE_EARNED,
+          title: `Badge Earned: ${event.badgeName}`,
+          message: `Congratulations! You earned the "${event.badgeName}" badge${event.points > 0 ? ` and ${event.points} points!` : '!'}`,
+          metadata: {
+            badgeId: event.badgeId,
+            badgeCode: event.badgeCode,
+            badgeName: event.badgeName,
+            points: event.points,
+            earnedAt: event.earnedAt,
+            ...event.metadata,
+          },
+        });
+      }
+
+      if (preferences.emailNotifications && preferences.badgeNotifications) {
+        await this.mailService.sendBadgeEarnedEmail(
+          user.email,
+          user.name || 'User',
+          event.badgeName,
+          event.points,
+        );
+      }
+
+      this.logger.log(`Badge notification processed for user ${event.userId}`);
+    } catch (error) {
+      this.logger.error(
+        `Error processing badge.earned event for user ${event.userId}`,
         error,
       );
     }
@@ -488,7 +614,35 @@ export class NotificationsService {
       read: false,
     });
 
-    return await this.notificationRepository.save(notification);
+    const savedNotification =
+      await this.notificationRepository.save(notification);
+    this.eventEmitter.emit('notification.created', savedNotification);
+    return savedNotification;
+  }
+
+  async getUnreadNotifications(userId: string): Promise<Notification[]> {
+    return await this.notificationRepository.find({
+      where: { userId, read: false },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async getNotificationsSince(
+    userId: string,
+    since: string | Date,
+  ): Promise<Notification[]> {
+    const sinceDate = typeof since === 'string' ? new Date(since) : since;
+    if (Number.isNaN(sinceDate.getTime())) {
+      return [];
+    }
+
+    return await this.notificationRepository.find({
+      where: {
+        userId,
+        createdAt: MoreThan(sinceDate),
+      },
+      order: { createdAt: 'ASC' },
+    });
   }
 
   /**
@@ -496,18 +650,18 @@ export class NotificationsService {
    */
   async getUserNotifications(
     userId: string,
-    page: number = 1,
-    limit: number = 20,
-  ): Promise<{ notifications: Notification[]; total: number }> {
-    const [notifications, total] =
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<PageDto<Notification>> {
+    const [notifications, totalItemCount] =
       await this.notificationRepository.findAndCount({
         where: { userId },
         order: { createdAt: 'DESC' },
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: pageOptionsDto.skip,
+        take: pageOptionsDto.limit,
       });
 
-    return { notifications, total };
+    const meta = new PageMetaDto({ pageOptionsDto, totalItemCount });
+    return new PageDto(notifications, meta);
   }
 
   /**
@@ -548,9 +702,7 @@ export class NotificationsService {
   /**
    * Get or create notification preferences for user
    */
-  async getOrCreatePreferences(
-    userId: string,
-  ): Promise<NotificationPreference> {
+  async getOrCreatePreferences(userId: string): Promise<UserPreference> {
     let preferences = await this.preferenceRepository.findOne({
       where: { userId },
     });
@@ -564,18 +716,205 @@ export class NotificationsService {
   }
 
   /**
+   * Create default preferences for a user
+   */
+  async createPreferences(userId: string): Promise<UserPreference> {
+    return this.getOrCreatePreferences(userId);
+  }
+
+  /**
+   * Delete preference record for a user, falling back to defaults.
+   */
+  async deletePreferences(userId: string): Promise<void> {
+    await this.preferenceRepository.delete({ userId });
+  }
+
+  /**
    * Update notification preferences
    */
   async updatePreferences(
     userId: string,
-    updates: Partial<NotificationPreference>,
-  ): Promise<NotificationPreference> {
+    updates: Partial<UserPreference>,
+  ): Promise<UserPreference> {
     let preferences = await this.getOrCreatePreferences(userId);
 
     Object.assign(preferences, updates);
     preferences = await this.preferenceRepository.save(preferences);
 
     return preferences;
+  }
+
+  /**
+   * Listen to governance.proposal.created event
+   */
+  @OnEvent('governance.proposal.created')
+  async handleProposalCreated(event: {
+    proposalId: string;
+    onChainId: number;
+    proposer: string;
+    title: string;
+  }) {
+    this.logger.log(
+      `Processing governance.proposal.created for ${event.onChainId}`,
+    );
+
+    try {
+      // Find all users who have governance notifications enabled
+      const usersWithPrefs = await this.userRepository
+        .createQueryBuilder('user')
+        .innerJoinAndSelect(
+          'notification_preferences',
+          'pref',
+          'pref.userId = user.id',
+        )
+        .where('pref.governanceNotifications = true')
+        .getMany();
+
+      for (const user of usersWithPrefs) {
+        await this.dispatchNotification({
+          userId: user.id,
+          type: NotificationType.GOVERNANCE_PROPOSAL_CREATED,
+          title: 'New Governance Proposal',
+          message: `A new proposal "#${event.onChainId}: ${event.title}" has been created.`,
+          metadata: event,
+        });
+      }
+    } catch (error) {
+      this.logger.error('Error processing governance.proposal.created', error);
+    }
+  }
+
+  /**
+   * Listen to governance.vote.cast event to notify delegators
+   */
+  @OnEvent('governance.vote.cast')
+  async handleVoteCast(event: {
+    voter: string;
+    onChainId: number;
+    direction: string;
+    weight: string;
+  }) {
+    this.logger.log(`Processing governance.vote.cast by ${event.voter}`);
+
+    try {
+      // Find all delegators for this voter
+      const delegations = await this.delegationRepository.find({
+        where: { delegateAddress: event.voter },
+      });
+
+      for (const delegation of delegations) {
+        // Find user by delegator address
+        const user = await this.userRepository.findOne({
+          where: { publicKey: delegation.delegatorAddress },
+        });
+
+        if (user) {
+          await this.dispatchNotification({
+            userId: user.id,
+            type: NotificationType.GOVERNANCE_DELEGATE_VOTED,
+            title: 'Your Delegate Voted',
+            message: `Your delegate ${event.voter.slice(0, 6)}... voted ${event.direction} on proposal #${event.onChainId}.`,
+            metadata: event,
+          });
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error processing governance.vote.cast', error);
+    }
+  }
+
+  /**
+   * Listen to governance.proposal.status_updated event
+   */
+  @OnEvent('governance.proposal.status_updated')
+  async handleProposalStatusUpdated(event: {
+    proposalId: string;
+    onChainId: number;
+    status: string;
+  }) {
+    this.logger.log(
+      `Processing governance.proposal.status_updated for ${event.onChainId} to ${event.status}`,
+    );
+
+    try {
+      // Notify everyone about significant status changes (Passed/Failed)
+      const usersWithPrefs = await this.userRepository
+        .createQueryBuilder('user')
+        .innerJoinAndSelect(
+          'notification_preferences',
+          'pref',
+          'pref.userId = user.id',
+        )
+        .where('pref.governanceNotifications = true')
+        .getMany();
+
+      const type =
+        event.status === 'Passed'
+          ? NotificationType.GOVERNANCE_PROPOSAL_QUEUED
+          : NotificationType.GOVERNANCE_PROPOSAL_EXECUTED; // Simplified for demo
+
+      for (const user of usersWithPrefs) {
+        await this.dispatchNotification({
+          userId: user.id,
+          type,
+          title: `Proposal #${event.onChainId} ${event.status}`,
+          message: `Governance proposal #${event.onChainId} has been successfully ${event.status.toLowerCase()}.`,
+          metadata: event,
+        });
+      }
+    } catch (error) {
+      this.logger.error(
+        'Error processing governance.proposal.status_updated',
+        error,
+      );
+    }
+  }
+
+  /**
+   * Helper to dispatch notification based on user preferences and digest settings
+   */
+  async dispatchNotification(data: {
+    userId: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    metadata?: Record<string, any>;
+  }) {
+    const preferences = await this.getOrCreatePreferences(data.userId);
+    const user = await this.userRepository.findOne({
+      where: { id: data.userId },
+    });
+
+    if (!user) return;
+
+    // 1. Always create In-App notification if enabled
+    if (preferences.inAppNotifications) {
+      await this.createNotification(data);
+    }
+
+    // 2. Handle Email based on Digest Frequency
+    if (preferences.emailNotifications) {
+      if (preferences.digestFrequency === DigestFrequency.INSTANT) {
+        // Send instant email
+        await this.mailService.sendGovernanceEmail(
+          user.email,
+          user.name || 'User',
+          data.title,
+          data.message,
+        );
+      } else {
+        // Store for Daily/Weekly digest
+        await this.pendingRepository.save(
+          this.pendingRepository.create({
+            userId: data.userId,
+            type: data.type,
+            title: data.title,
+            message: data.message,
+            metadata: data.metadata,
+          }),
+        );
+      }
+    }
   }
 
   /**

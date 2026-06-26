@@ -6,11 +6,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, IsNull } from 'typeorm';
 import { Referral, ReferralStatus } from './entities/referral.entity';
 import { ReferralCampaign } from './entities/referral-campaign.entity';
 import { User } from '../user/entities/user.entity';
-import { Transaction, TxType } from '../transactions/entities/transaction.entity';
+import {
+  Transaction,
+  TxType,
+} from '../transactions/entities/transaction.entity';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomBytes } from 'crypto';
 
@@ -33,7 +36,10 @@ export class ReferralsService {
   /**
    * Generate a unique referral code for a user
    */
-  async generateReferralCode(userId: string, campaignId?: string): Promise<Referral> {
+  async generateReferralCode(
+    userId: string,
+    campaignId?: string,
+  ): Promise<Referral> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -41,7 +47,7 @@ export class ReferralsService {
 
     // Check if user already has an active referral code
     const existing = await this.referralRepository.findOne({
-      where: { referrerId: userId, campaignId: campaignId || null },
+      where: { referrerId: userId, campaignId: campaignId ?? IsNull() },
     });
 
     if (existing) {
@@ -51,7 +57,9 @@ export class ReferralsService {
     // Validate campaign if provided
     let campaign: ReferralCampaign | null = null;
     if (campaignId) {
-      campaign = await this.campaignRepository.findOne({ where: { id: campaignId } });
+      campaign = await this.campaignRepository.findOne({
+        where: { id: campaignId },
+      });
       if (!campaign || !campaign.isActive) {
         throw new BadRequestException('Invalid or inactive campaign');
       }
@@ -73,7 +81,10 @@ export class ReferralsService {
   /**
    * Apply a referral code during user signup
    */
-  async applyReferralCode(referralCode: string, refereeId: string): Promise<void> {
+  async applyReferralCode(
+    referralCode: string,
+    refereeId: string,
+  ): Promise<void> {
     const referral = await this.referralRepository.findOne({
       where: { referralCode },
       relations: ['referrer', 'campaign'],
@@ -94,7 +105,10 @@ export class ReferralsService {
     // Check if campaign is still valid
     if (referral.campaign) {
       const now = new Date();
-      if (referral.campaign.endDate && new Date(referral.campaign.endDate) < now) {
+      if (
+        referral.campaign.endDate &&
+        new Date(referral.campaign.endDate) < now
+      ) {
         referral.status = ReferralStatus.EXPIRED;
         await this.referralRepository.save(referral);
         throw new BadRequestException('Referral campaign has expired');
@@ -113,13 +127,18 @@ export class ReferralsService {
     referral.refereeId = refereeId;
     await this.referralRepository.save(referral);
 
-    this.logger.log(`Referral code ${referralCode} applied for user ${refereeId}`);
+    this.logger.log(
+      `Referral code ${referralCode} applied for user ${refereeId}`,
+    );
   }
 
   /**
    * Check and complete referral when user makes first deposit
    */
-  async checkAndCompleteReferral(userId: string, depositAmount: string): Promise<void> {
+  async checkAndCompleteReferral(
+    userId: string,
+    depositAmount: string,
+  ): Promise<void> {
     const referral = await this.referralRepository.findOne({
       where: { refereeId: userId, status: ReferralStatus.PENDING },
       relations: ['referrer', 'campaign'],
@@ -132,7 +151,7 @@ export class ReferralsService {
     // Check minimum deposit requirement
     const campaign = referral.campaign;
     const minDeposit = campaign?.minDepositAmount || '0';
-    
+
     if (parseFloat(depositAmount) < parseFloat(minDeposit)) {
       this.logger.log(
         `Deposit amount ${depositAmount} below minimum ${minDeposit} for referral ${referral.id}`,
@@ -239,8 +258,22 @@ export class ReferralsService {
     const userReferral = referrals[0];
 
     const successfulReferrals = referrals.filter(
-      (r) => r.status === ReferralStatus.COMPLETED || r.status === ReferralStatus.REWARDED,
+      (r) =>
+        r.status === ReferralStatus.COMPLETED ||
+        r.status === ReferralStatus.REWARDED,
     );
+
+    const pendingReferrals = referrals.filter(
+      (r) => r.status === ReferralStatus.PENDING,
+    ).length;
+
+    const completedReferrals = referrals.filter(
+      (r) => r.status === ReferralStatus.COMPLETED,
+    ).length;
+
+    const rewardedReferrals = referrals.filter(
+      (r) => r.status === ReferralStatus.REWARDED,
+    ).length;
 
     const pendingRewards = referrals
       .filter((r) => r.status === ReferralStatus.COMPLETED && r.rewardAmount)
@@ -250,14 +283,22 @@ export class ReferralsService {
       .filter((r) => r.status === ReferralStatus.REWARDED && r.rewardAmount)
       .reduce((sum, r) => sum + parseFloat(r.rewardAmount!), 0);
 
-    const rank = await this.getReferrerRank(userId);
+    const totalRewardsEarned = referrals
+      .filter((r) => r.status === ReferralStatus.REWARDED && r.rewardAmount)
+      .reduce((sum, r) => sum + parseFloat(r.rewardAmount!), 0);
+
+    const rank = null; // await this.getReferrerRank(userId);
 
     return {
       referralCode: userReferral?.referralCode || null,
       totalReferrals: referrals.length,
       successfulReferrals: successfulReferrals.length,
+      pendingReferrals,
+      completedReferrals,
+      rewardedReferrals,
       pendingRewards: parseFloat(pendingRewards.toFixed(2)),
       claimedRewards: parseFloat(claimedRewards.toFixed(2)),
+      totalRewardsEarned: totalRewardsEarned.toFixed(7),
       rank,
     };
   }
@@ -276,12 +317,18 @@ export class ReferralsService {
   /**
    * Generate a custom referral code for a user (issue #528)
    */
-  async generateCustomCode(userId: string, code?: string, campaignId?: string): Promise<Referral> {
+  async generateCustomCode(
+    userId: string,
+    code?: string,
+    campaignId?: string,
+  ): Promise<Referral> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
     if (code) {
-      const taken = await this.referralRepository.findOne({ where: { referralCode: code } });
+      const taken = await this.referralRepository.findOne({
+        where: { referralCode: code },
+      });
       if (taken) {
         if (taken.referrerId === userId) return taken; // idempotent
         throw new ConflictException('Referral code already taken');
@@ -291,7 +338,9 @@ export class ReferralsService {
     }
 
     if (campaignId) {
-      const campaign = await this.campaignRepository.findOne({ where: { id: campaignId } });
+      const campaign = await this.campaignRepository.findOne({
+        where: { id: campaignId },
+      });
       if (!campaign || !campaign.isActive) {
         throw new BadRequestException('Invalid or inactive campaign');
       }
@@ -309,7 +358,14 @@ export class ReferralsService {
   /**
    * Get leaderboard of top referrers (issue #528)
    */
-  async getLeaderboard(limit = 10): Promise<Array<{ rank: number; userId: string; successfulReferrals: number; totalRewards: number }>> {
+  async getLeaderboard(limit = 10): Promise<
+    Array<{
+      rank: number;
+      userId: string;
+      successfulReferrals: number;
+      totalRewards: number;
+    }>
+  > {
     const rows = await this.referralRepository
       .createQueryBuilder('r')
       .select('r.referrerId', 'userId')
@@ -357,7 +413,9 @@ export class ReferralsService {
     });
 
     if (recentReferrals > 10) {
-      this.logger.warn(`Suspicious activity: ${recentReferrals} referrals in 24h`);
+      this.logger.warn(
+        `Suspicious activity: ${recentReferrals} referrals in 24h`,
+      );
       return true;
     }
 
@@ -369,7 +427,9 @@ export class ReferralsService {
 
       // If only one deposit and immediate withdrawal, flag as suspicious
       const deposits = transactions.filter((t) => t.type === TxType.DEPOSIT);
-      const withdrawals = transactions.filter((t) => t.type === TxType.WITHDRAW);
+      const withdrawals = transactions.filter(
+        (t) => t.type === TxType.WITHDRAW,
+      );
 
       if (deposits.length === 1 && withdrawals.length > 0) {
         const timeDiff =
@@ -377,7 +437,9 @@ export class ReferralsService {
           new Date(deposits[0].createdAt).getTime();
         if (timeDiff < 60 * 60 * 1000) {
           // Less than 1 hour
-          this.logger.warn(`Suspicious withdrawal pattern for user ${referral.refereeId}`);
+          this.logger.warn(
+            `Suspicious withdrawal pattern for user ${referral.refereeId}`,
+          );
           return true;
         }
       }

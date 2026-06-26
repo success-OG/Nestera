@@ -11,6 +11,7 @@ import { WithdrawHandler } from './event-handlers/withdraw.handler';
 import { YieldHandler } from './event-handlers/yield.handler';
 import { StellarService } from './stellar.service';
 import { SavingsProduct } from '../savings/entities/savings-product.entity';
+import { ShutdownTrackedTask } from '../../common/decorators/shutdown-task.decorator';
 
 /** Shape of a raw Soroban event as returned by the RPC. */
 interface SorobanEvent {
@@ -61,6 +62,7 @@ export class IndexerService implements OnModuleInit {
     );
   }
 
+  @ShutdownTrackedTask()
   @Cron(CronExpression.EVERY_5_SECONDS)
   async runIndexerCycle(): Promise<void> {
     if (!this.indexerState) return;

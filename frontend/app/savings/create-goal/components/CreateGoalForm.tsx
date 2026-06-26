@@ -1,253 +1,300 @@
 "use client";
 
-import React, { useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import React from "react";
+import { useForm } from "react-hook-form";
+import { useFormatter, useTranslations } from "next-intl";
+import { Calendar, CircleDollarSign, Flag, Repeat, ShieldCheck } from "lucide-react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const isFutureDate = (value: string) => {
+  if (!value) {
+    return false;
+  }
+
+  const date = new Date(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return date > today;
+};
 
 export default function CreateGoalForm() {
-  const [formData, setFormData] = useState({
-    goalName: "",
-    category: "",
-    targetAmount: "",
-    startingAmount: "",
-    targetDate: "",
-    frequency: "",
-    description: "",
-    autoSave: false,
-    routeToYield: false,
+  const t = useTranslations("goals");
+  const formsT = useTranslations("forms");
+  const format = useFormatter();
+
+  const createGoalSchema = z.object({
+    goalName: z
+      .string()
+      .trim()
+      .min(3, formsT("minLength", { min: 3 }))
+      .max(50, formsT("maxLength", { max: 50 })),
+    category: z.string().min(1, formsT("required")),
+    targetAmount: z.string().refine((val) => Number(val) > 0, formsT("minValue")),
+    startingAmount: z
+      .string()
+      .refine((val) => val === "" || Number(val) >= 0, formsT("nonNegative")),
+    targetDate: z.string().refine(isFutureDate, formsT("futureDate")),
+    frequency: z.string().min(1, formsT("required")),
+    description: z.string().max(160, formsT("maxLength", { max: 160 })).optional(),
+    autoSave: z.boolean(),
+    routeToYield: z.boolean(),
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
-  ) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
-  };
+  type CreateGoalFormValues = z.infer<typeof createGoalSchema>;
 
-  const handleToggle = (field: "autoSave" | "routeToYield") => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors, isSubmitting, isSubmitSuccessful },
+  } = useForm<CreateGoalFormValues>({
+    resolver: zodResolver(createGoalSchema),
+    mode: "onChange",
+    defaultValues: {
+      goalName: "",
+      category: "",
+      targetAmount: "",
+      startingAmount: "",
+      targetDate: "",
+      frequency: "",
+      description: "",
+      autoSave: true,
+      routeToYield: true,
+    },
+  });
+
+  const targetAmount = Number(watch("targetAmount") || 0);
+  const targetDate = watch("targetDate");
+
+  const onSubmit = async (data: CreateGoalFormValues) => {
+    try {
+      console.log("Create goal submitted:", data);
+      await Promise.resolve();
+      // Success - could show toast here
+      reset();
+    } catch (error) {
+      console.error("Error creating goal:", error);
+    }
   };
 
   return (
-    <div className="w-full bg-[#0A1A1A] py-12 md:py-16">
-      <div className="w-full max-w-2xl mx-auto px-6 md:px-8">
-        <div className="rounded-2xl border border-white/10 bg-[#0D2626] shadow-2xl overflow-hidden relative">
-          <div className="px-6 pt-5 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white">Create New Goal</h2>
-            <button
-              type="button"
-              className="text-[#8C9BAB] hover:text-white transition-colors"
-              aria-label="Close"
-            >
-              <X size={24} />
-            </button>
-          </div>
-          <form className="p-6 space-y-5">
-            {/* Goal Name */}
-            <div>
-              <label className="block text-[#8C9BAB] font-semibold mb-2 text-sm">
-                Goal Name
-              </label>
+    <section className="w-full max-w-7xl mx-auto px-6 md:px-8 py-10 md:py-14">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6"
+        aria-describedby={isSubmitSuccessful ? "create-goal-success" : undefined}
+      >
+        <div className="rounded-2xl border border-white/5 bg-[#061a1a] p-6 md:p-8 space-y-5">
+          <div>
+            <label htmlFor="goalName" className="block text-sm font-semibold text-white mb-2">
+              {t("goalName")}
+            </label>
+            <div className="relative">
+              <Flag className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5e8c96]" size={18} />
               <input
-                type="text"
-                name="goalName"
-                value={formData.goalName}
-                onChange={handleChange}
-                placeholder="e.g., Emergency Fund"
-                className="w-full px-4 py-2.5 rounded-lg bg-[#0F2D2D] border border-white/10 text-[#8C9BAB] placeholder-[#6a8a93] focus:border-[#00D9C0] focus:outline-none transition-colors"
+                id="goalName"
+                {...register("goalName")}
+                placeholder={t("goalNamePlaceholder")}
+                className={`w-full bg-[#0e2330] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-[#4e7a86] focus:outline-hidden focus:border-cyan-500/50 ${errors.goalName ? "border-red-500" : ""}`}
+                aria-invalid={!!errors.goalName}
+                aria-describedby={errors.goalName ? "goalName-error" : undefined}
               />
             </div>
+            {errors.goalName && (
+              <p id="goalName-error" role="alert" className="text-amber-400 text-xs mt-2 m-0">
+                {errors.goalName.message}
+              </p>
+            )}
+          </div>
 
-            {/* Category */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-[#8C9BAB] font-semibold mb-2 text-sm">
-                Category
+              <label htmlFor="category" className="block text-sm font-semibold text-white mb-2">
+                {t("category")}
+              </label>
+              <select
+                id="category"
+                {...register("category")}
+                className={`w-full bg-[#0e2330] border border-white/5 rounded-xl py-3 px-4 text-white focus:outline-hidden focus:border-cyan-500/50 ${errors.category ? "border-red-500" : ""}`}
+                aria-invalid={!!errors.category}
+                aria-describedby={errors.category ? "category-error" : undefined}
+              >
+                <option value="">{t("selectCategory")}</option>
+                {["General", "Travel", "Housing", "Education", "Emergency"].map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+              {errors.category && (
+                <p id="category-error" role="alert" className="text-amber-400 text-xs mt-2 m-0">
+                  {errors.category.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="targetAmount" className="block text-sm font-semibold text-white mb-2">
+                {t("targetAmount")}
               </label>
               <div className="relative">
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#0F2D2D] border border-white/10 text-[#8C9BAB] focus:border-[#00D9C0] focus:outline-none appearance-none transition-colors"
-                >
-                  <option value="">Select category</option>
-                  <option value="emergency">Emergency Fund</option>
-                  <option value="vacation">Vacation</option>
-                  <option value="education">Education</option>
-                  <option value="home">Home Purchase</option>
-                  <option value="vehicle">Vehicle</option>
-                  <option value="retirement">Retirement</option>
-                  <option value="other">Other</option>
-                </select>
-                <ChevronDown
-                  size={18}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6a8a93] pointer-events-none"
-                />
-              </div>
-            </div>
-
-            {/* Target Amount and Starting Amount */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[#8C9BAB] font-semibold mb-2 text-sm">
-                  Target Amount
-                </label>
+                <CircleDollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5e8c96]" size={18} />
                 <input
-                  type="number"
-                  name="targetAmount"
-                  value={formData.targetAmount}
-                  onChange={handleChange}
-                  placeholder="$15,000"
-                  min="0"
-                  step="0.01"
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#0F2D2D] border border-white/10 text-[#8C9BAB] placeholder-[#6a8a93] focus:border-[#00D9C0] focus:outline-none transition-colors"
+                  id="targetAmount"
+                  {...register("targetAmount")}
+                  inputMode="decimal"
+                  placeholder={t("targetAmountPlaceholder")}
+                  className={`w-full bg-[#0e2330] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-[#4e7a86] focus:outline-hidden focus:border-cyan-500/50 ${errors.targetAmount ? "border-red-500" : ""}`}
+                  aria-invalid={!!errors.targetAmount}
+                  aria-describedby={errors.targetAmount ? "targetAmount-error" : undefined}
                 />
               </div>
-              <div>
-                <label className="block text-[#8C9BAB] font-semibold mb-2 text-sm">
-                  Starting Amount
-                </label>
-                <input
-                  type="number"
-                  name="startingAmount"
-                  value={formData.startingAmount}
-                  onChange={handleChange}
-                  placeholder="$0 (optional)"
-                  min="0"
-                  step="0.01"
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#0F2D2D] border border-white/10 text-[#8C9BAB] placeholder-[#6a8a93] focus:border-[#00D9C0] focus:outline-none transition-colors"
-                />
-              </div>
+              {errors.targetAmount && (
+                <p id="targetAmount-error" role="alert" className="text-amber-400 text-xs mt-2 m-0">
+                  {errors.targetAmount.message}
+                </p>
+              )}
             </div>
+          </div>
 
-            {/* Target Date and Frequency */}
-            <div className="gap-4">
-              <div>
-                <label className="block text-[#8C9BAB] font-semibold mb-2 text-sm">
-                  Target Date
-                </label>
-                <input
-                  type="input"
-                  name="targetDate"
-                  placeholder="Select Date"
-                  value={formData.targetDate}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg bg-[#0F2D2D] border border-white/10 text-[#8C9BAB] focus:border-[#00D9C0] focus:outline-none transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Toggles */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <div className="gap-4 mb-4">
-                <div>
-                  <label className="block text-[#8C9BAB] font-semibold mb-2 text-sm">
-                    Contribution Frequency
-                  </label>
-                  <div className="relative">
-                  <select
-                    name="frequency"
-                    value={formData.frequency}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-lg bg-[#0F2D2D] border border-white/10 text-[#A1ADAD] focus:border-[#00D9C0] focus:outline-none appearance-none transition-colors"
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                  <ChevronDown
-                    size={18}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1ADAD] pointer-events-none"
-                  />
-                </div>
-                </div>
-              </div>
-              <div className="w-full px-3 py-5 rounded-lg bg-[#0F2D2D] border border-white/10 flex items-center justify-between">
-                <label className="text-[#A1ADAD] font-semibold text-sm">
-                  Enable auto-save
-                </label>
-                <button
-                  type="button"
-                  onClick={() => handleToggle("autoSave")}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.autoSave ? "bg-[#00D9C0]" : "bg-[#1a3f3a]"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full bg-[#A1ADAD] transition-transform ${
-                      formData.autoSave ? "translate-x-5 bg-white" : "translate-x-0.5 bg-[#A1ADAD]"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="w-full px-3 py-3 mt-3 rounded-lg bg-[#0F2D2D] border border-white/10 flex items-center justify-between">
-                <div>
-                  <label className="text-[#A1ADAD] font-semibold text-sm">
-                    Route to yield pool
-                  </label>
-                  <p className="text-[#4F6565] text-xs mt-0.5">
-                    Earn 5% APY on your savings
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleToggle("routeToYield")}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.routeToYield ? "bg-[#00D9C0]" : "bg-[#1a3f3a]"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-5 w-5 transform rounded-full transition-transform ${
-                      formData.routeToYield
-                        ? "translate-x-5 bg-white"
-                        : "translate-x-0.5 bg-[#A1ADAD]"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            {/* Note */}
-            <div>
-              <label className="block text-[#8C9BAB] font-semibold mb-2 text-sm">
-                Note (Optional)
+              <label htmlFor="targetDate" className="block text-sm font-semibold text-white mb-2">
+                {t("targetDate")}
               </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Add a personal note or description..."
-                rows={3}
-                className="w-full px-4 py-2.5 rounded-lg bg-[#0F2D2D] border border-white/10 text-[#8C9BAB] placeholder-[#6a8a93] focus:border-[#00D9C0] focus:outline-none transition-colors resize-none"
-              />
+              <div className="relative">
+                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5e8c96]" size={18} />
+                <input
+                  id="targetDate"
+                  {...register("targetDate")}
+                  type="date"
+                  className={`w-full bg-[#0e2330] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-hidden focus:border-cyan-500/50 ${errors.targetDate ? "border-red-500" : ""}`}
+                  aria-invalid={!!errors.targetDate}
+                  aria-describedby={errors.targetDate ? "targetDate-error" : undefined}
+                />
+              </div>
+              {errors.targetDate && (
+                <p id="targetDate-error" role="alert" className="text-amber-400 text-xs mt-2 m-0">
+                  {errors.targetDate.message}
+                </p>
+              )}
             </div>
 
-            {/* Footer Actions */}
-            <div className="flex gap-3 pt-5">
-              <button
-                type="button"
-                className="flex-1 px-4 py-2.5 border border-white/10 rounded-lg text-[#8C9BAB] font-semibold hover:bg-white/10 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2.5 bg-[#00D9C0] hover:bg-[#00b3a0] text-white font-semibold rounded-lg transition-all active:scale-95"
-              >
-                Create Goal
-              </button>
+            <div>
+              <label htmlFor="frequency" className="block text-sm font-semibold text-white mb-2">
+                {t("frequency")}
+              </label>
+              <div className="relative">
+                <Repeat className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5e8c96]" size={18} />
+                <select
+                  id="frequency"
+                  {...register("frequency")}
+                  className={`w-full bg-[#0e2330] border border-white/5 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-hidden focus:border-cyan-500/50 ${errors.frequency ? "border-red-500" : ""}`}
+                  aria-invalid={!!errors.frequency}
+                  aria-describedby={errors.frequency ? "frequency-error" : undefined}
+                >
+                  <option value="">{t("selectFrequency")}</option>
+                  <option value="weekly">{t("weekly")}</option>
+                  <option value="monthly">{t("monthly")}</option>
+                </select>
+              </div>
+              {errors.frequency && (
+                <p id="frequency-error" role="alert" className="text-amber-400 text-xs mt-2 m-0">
+                  {errors.frequency.message}
+                </p>
+              )}
             </div>
-          </form>
+          </div>
+
+          <div>
+            <label htmlFor="startingAmount" className="block text-sm font-semibold text-white mb-2">
+              {t("startingAmount")}
+            </label>
+            <input
+              id="startingAmount"
+              {...register("startingAmount")}
+              inputMode="decimal"
+              placeholder="0"
+              className={`w-full bg-[#0e2330] border border-white/5 rounded-xl py-3 px-4 text-white placeholder:text-[#4e7a86] focus:outline-hidden focus:border-cyan-500/50 ${errors.startingAmount ? "border-red-500" : ""}`}
+              aria-invalid={!!errors.startingAmount}
+              aria-describedby={errors.startingAmount ? "startingAmount-error" : undefined}
+            />
+            {errors.startingAmount && (
+              <p id="startingAmount-error" role="alert" className="text-amber-400 text-xs mt-2 m-0">
+                {errors.startingAmount.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-semibold text-white mb-2">
+              {t("description")}
+            </label>
+            <textarea
+              id="description"
+              {...register("description")}
+              rows={3}
+              placeholder={t("descriptionPlaceholder")}
+              className={`w-full bg-[#0e2330] border border-white/5 rounded-xl py-3 px-4 text-white placeholder:text-[#4e7a86] focus:outline-hidden focus:border-cyan-500/50 ${errors.description ? "border-red-500" : ""}`}
+              aria-invalid={!!errors.description}
+              aria-describedby={errors.description ? "description-error" : undefined}
+            />
+            {errors.description && (
+              <p id="description-error" role="alert" className="text-amber-400 text-xs mt-2 m-0">
+                {errors.description.message}
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
+              <span className="text-sm font-semibold text-white">{t("autoSave")}</span>
+              <input type="checkbox" {...register("autoSave")} className="h-5 w-5" />
+            </label>
+            <label className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3">
+              <span className="text-sm font-semibold text-white">{t("routeToYield")}</span>
+              <input type="checkbox" {...register("routeToYield")} className="h-5 w-5" />
+            </label>
+          </div>
+
+          {isSubmitSuccessful && (
+            <p id="create-goal-success" role="status" className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-emerald-300 text-sm font-semibold">
+              {t("success")}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-cyan-500 hover:bg-cyan-400 text-[#061a1a] font-bold rounded-xl transition-all active:scale-95 disabled:opacity-50"
+            disabled={isSubmitting}
+          >
+            <ShieldCheck size={18} />
+            {isSubmitting ? t("creating") : t("create")}
+          </button>
         </div>
-      </div>
-    </div>
+
+        <aside className="rounded-2xl border border-white/5 bg-[#0e2330] p-6 h-fit">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#6a8a93] m-0">{t("summary")}</p>
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="text-[#6a8a93] text-xs m-0">{t("targetAmount")}</p>
+              <p className="text-white text-2xl font-bold m-0">
+                {format.number(targetAmount || 0, { style: "currency", currency: "USD" })}
+              </p>
+            </div>
+            <div>
+              <p className="text-[#6a8a93] text-xs m-0">{t("targetDate")}</p>
+              <p className="text-white font-semibold m-0">
+                {targetDate ? format.dateTime(new Date(targetDate), { dateStyle: "medium" }) : t("notSet")}
+              </p>
+            </div>
+            <p className="text-[#6a8a93] text-sm leading-relaxed m-0">{t("tips.realisticTimeline")}</p>
+          </div>
+        </aside>
+      </form>
+    </section>
   );
 }

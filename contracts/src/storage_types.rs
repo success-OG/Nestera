@@ -208,6 +208,10 @@ pub enum DataKey {
     DisabledStrategy(PlanType, u64),
     /// Stores the native protocol token metadata (name, symbol, decimals, supply, treasury)
     TokenMetadata,
+    /// Role membership: (role_name, address) -> bool
+    HasRole(Symbol, Address),
+    /// Role member list: role_name -> Vec<Address>
+    RoleMembers(Symbol),
 }
 
 /// Payload structure that the admin signs off-chain

@@ -179,7 +179,7 @@ pub fn update_rewards(env: &Env) -> Result<(), SavingsError> {
         // For first stake (last_update == 0), use current time as reference
 
         let time_elapsed = now
-            .checked_sub(effective_last_update)
+            .checked_sub(last_update)
             .ok_or(SavingsError::Underflow)?;
 
         if time_elapsed > 0 {

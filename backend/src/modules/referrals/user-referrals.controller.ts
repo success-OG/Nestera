@@ -9,7 +9,13 @@ import {
   HttpStatus,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ReferralsService } from './referrals.service';
 import {
@@ -50,10 +56,14 @@ export class UserReferralsController {
   }
 
   @Get('history')
-  @ApiOperation({ summary: 'View referred users and rewards (conversion funnel)' })
+  @ApiOperation({
+    summary: 'View referred users and rewards (conversion funnel)',
+  })
   @ApiResponse({ status: 200, type: [ReferralResponseDto] })
   async getReferralHistory(@Request() req) {
-    const referrals = await this.referralsService.getUserReferrals(req.user.userId);
+    const referrals = await this.referralsService.getUserReferrals(
+      req.user.userId,
+    );
     return referrals.map((r) => ({
       id: r.id,
       referralCode: r.referralCode,

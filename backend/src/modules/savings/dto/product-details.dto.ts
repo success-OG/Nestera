@@ -8,74 +8,69 @@ import {
  * Detailed product response combining static DB attributes with live Soroban contract data
  */
 export class ProductDetailsDto {
-  @ApiProperty({ description: 'Product UUID' })
+  @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479', description: 'Product UUID' })
   id: string;
 
-  @ApiProperty({ description: 'Product name' })
+  @ApiProperty({ example: 'Flexible Saver', description: 'Product name' })
   name: string;
 
-  @ApiProperty({ enum: SavingsProductType, description: 'Product type' })
+  @ApiProperty({ enum: SavingsProductType, example: SavingsProductType.FLEXIBLE, description: 'Product type' })
   type: SavingsProductType;
 
-  @ApiPropertyOptional({ description: 'Product description' })
+  @ApiPropertyOptional({ example: 'Earn 6% APY with no lock-up period.', description: 'Product description' })
   description: string | null;
 
-  @ApiProperty({ description: 'Annual interest rate (%)' })
+  @ApiProperty({ example: 6.0, description: 'Annual interest rate (%)' })
   interestRate: number;
 
-  @ApiProperty({ description: 'Minimum subscription amount' })
+  @ApiProperty({ example: 10, description: 'Minimum subscription amount (XLM)' })
   minAmount: number;
 
-  @ApiProperty({ description: 'Maximum subscription amount' })
+  @ApiProperty({ example: 100000, description: 'Maximum subscription amount (XLM)' })
   maxAmount: number;
 
-  @ApiPropertyOptional({ description: 'Tenure in months' })
+  @ApiPropertyOptional({ example: null, description: 'Tenure in months (null for flexible)' })
   tenureMonths: number | null;
 
-  @ApiProperty({ description: 'Whether product is active' })
+  @ApiProperty({ example: true, description: 'Whether product is active' })
   isActive: boolean;
 
-  @ApiPropertyOptional({
-    description: 'Maximum active subscriptions allowed per user',
-  })
+  @ApiPropertyOptional({ example: 3, description: 'Maximum active subscriptions allowed per user' })
   maxSubscriptionsPerUser: number | null;
-  @ApiProperty({ description: 'Current product version' })
+
+  @ApiProperty({ example: 1, description: 'Current product version' })
   version: number;
 
-  @ApiPropertyOptional({ description: 'Soroban vault contract ID' })
+  @ApiPropertyOptional({ example: 'CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA', description: 'Soroban vault contract ID' })
   contractId: string | null;
 
-  @ApiProperty({
-    description: 'Live total assets from Soroban contract (in stroops)',
-  })
+  @ApiProperty({ example: 12500000000, description: 'Live total assets from Soroban contract (in stroops)' })
   totalAssets: number;
 
-  @ApiProperty({ description: 'Live total assets formatted as XLM' })
+  @ApiProperty({ example: 1250.0, description: 'Live total assets formatted as XLM' })
   totalAssetsXlm: number;
 
-  @ApiPropertyOptional({
-    description: 'Maximum liquidity-backed capacity for the product',
-  })
+  @ApiPropertyOptional({ example: 5000000, description: 'Maximum liquidity-backed capacity for the product' })
   maxCapacity: number | null;
 
-  @ApiProperty({ description: 'Current utilized capacity amount' })
+  @ApiProperty({ example: 1250000, description: 'Current utilized capacity amount' })
   utilizedCapacity: number;
 
-  @ApiProperty({ description: 'Remaining capacity amount' })
+  @ApiProperty({ example: 3750000, description: 'Remaining capacity amount' })
   availableCapacity: number;
 
-  @ApiProperty({ description: 'Capacity utilization percentage' })
+  @ApiProperty({ example: 25.0, description: 'Capacity utilization percentage' })
   utilizationPercentage: number;
 
-  @ApiProperty({ description: 'Whether the product is fully utilized' })
+  @ApiProperty({ example: false, description: 'Whether the product is fully utilized' })
   isFull: boolean;
 
-  @ApiProperty({ description: 'Product creation timestamp' })
+  @ApiProperty({ example: '2025-01-15T10:00:00.000Z', description: 'Product creation timestamp' })
   createdAt: Date;
 
-  @ApiProperty({ description: 'Risk level classification', enum: RiskLevel })
+  @ApiProperty({ example: RiskLevel.LOW, description: 'Risk level classification', enum: RiskLevel })
   riskLevel: RiskLevel;
 
-  @ApiProperty({ description: 'Product last update timestamp' })
+  @ApiProperty({ example: '2026-03-20T14:30:00.000Z', description: 'Product last update timestamp' })
   updatedAt: Date;
 }

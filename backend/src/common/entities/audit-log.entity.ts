@@ -44,6 +44,7 @@ export enum AuditResourceType {
   KYC = 'KYC',
   NOTIFICATION = 'NOTIFICATION',
   ADMIN = 'ADMIN',
+  WITHDRAWAL_REQUEST = 'WITHDRAWAL_REQUEST',
   SYSTEM = 'SYSTEM',
 }
 

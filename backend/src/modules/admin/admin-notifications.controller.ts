@@ -33,10 +33,14 @@ import { Role } from '../../common/enums/role.enum';
 @Roles(Role.ADMIN)
 @ApiBearerAuth()
 export class AdminNotificationsController {
-  constructor(private readonly notificationsService: AdminNotificationsService) {}
+  constructor(
+    private readonly notificationsService: AdminNotificationsService,
+  ) {}
 
   @Post('broadcast')
-  @ApiOperation({ summary: 'Send broadcast notification to all or targeted users' })
+  @ApiOperation({
+    summary: 'Send broadcast notification to all or targeted users',
+  })
   @ApiResponse({
     status: 200,
     description: 'Broadcast sent',
@@ -95,7 +99,11 @@ export class AdminNotificationsController {
   @ApiOperation({ summary: 'Get notification broadcast history' })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
-  @ApiQuery({ name: 'channel', required: false, enum: ['EMAIL', 'IN_APP', 'PUSH'] })
+  @ApiQuery({
+    name: 'channel',
+    required: false,
+    enum: ['EMAIL', 'IN_APP', 'PUSH'],
+  })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Notification history' })

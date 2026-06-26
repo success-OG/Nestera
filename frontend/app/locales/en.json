@@ -1,0 +1,128 @@
+{
+  "metadata": {
+    "title": "Nestera - Decentralized Savings on Stellar",
+    "description": "Secure, transparent savings powered by Stellar and Soroban."
+  },
+  "Navbar": {
+    "features": "Features",
+    "savings": "Savings",
+    "dashboard": "Dashboard",
+    "community": "Community",
+    "docs": "Documentation",
+    "language": "Language",
+    "english": "English",
+    "spanish": "Spanish",
+    "connectWallet": "Connect Wallet",
+    "openMenu": "Open main menu"
+  },
+  "forms": {
+    "invalidEmail": "Enter a valid email address.",
+    "required": "This field is required.",
+    "minLength": "Must be at least {min} characters.",
+    "maxLength": "Must not exceed {max} characters.",
+    "minValue": "Must be greater than 0.",
+    "nonNegative": "Must be 0 or greater.",
+    "futureDate": "Choose a future date."
+  },
+  "Newsletter": {
+    "title": "Subscribe to our newsletter",
+    "description": "Get the latest updates and news about Nestera.",
+    "placeholder": "Enter your email",
+    "submit": "Subscribe",
+    "success": "Thank you for subscribing!"
+  },
+  "Support": {
+    "title": "Contact Support",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "subjectLabel": "Subject",
+    "messageLabel": "Message",
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "your.email@example.com",
+    "subjectPlaceholder": "How can we help?",
+    "messagePlaceholder": "Please describe your issue or question...",
+    "sendMessage": "Send Message",
+    "sending": "Sending...",
+    "success": "Thank you for your message. We'll get back to you soon.",
+    "validation": {
+      "nameTooShort": "Name must be at least 2 characters.",
+      "subjectTooShort": "Subject must be at least 5 characters.",
+      "messageTooShort": "Message must be at least 10 characters."
+    }
+  },
+  "goals": {
+    "createGoal": "Create Goal",
+    "goalName": "Goal Name",
+    "goalNamePlaceholder": "Emergency fund",
+    "category": "Category",
+    "selectCategory": "Select a category",
+    "targetAmount": "Target Amount",
+    "targetAmountPlaceholder": "Enter target amount",
+    "startingAmount": "Starting Amount",
+    "targetDate": "Target Date",
+    "frequency": "Contribution Frequency",
+    "selectFrequency": "Select frequency",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "description": "Description",
+    "descriptionPlaceholder": "Add a short note about this goal",
+    "autoSave": "Enable auto-save",
+    "routeToYield": "Route to yield",
+    "summary": "Goal Summary",
+    "notSet": "Not set",
+    "success": "Goal created successfully.",
+    "creating": "Creating...",
+    "create": "Create Goal",
+    "tips": {
+      "title": "Goal tips",
+      "realisticTimeline": "Set a realistic timeline to achieve your goal.",
+      "startSmall": "Start with small, achievable savings.",
+      "nameClearly": "Give your goal a clear name."
+    }
+  },
+  "Settings": {
+    "title": "Settings",
+    "description": "Manage your account preferences",
+    "notifications": "Notifications",
+    "emailNotifications": "Email Notifications",
+    "emailNotificationsDescription": "Receive emails about important account events",
+    "inAppNotifications": "In-app Notifications",
+    "inAppNotificationsDescription": "Show notifications inside the app",
+    "sweepNotifications": "Sweep Notifications",
+    "sweepNotificationsDescription": "Receive updates about sweepstakes and promotions",
+    "claimNotifications": "Claim Notifications",
+    "claimNotificationsDescription": "Notify when rewards are available to claim",
+    "yieldNotifications": "Yield Notifications",
+    "yieldNotificationsDescription": "Receive updates about yield changes and opportunities",
+    "milestoneNotifications": "Goal Milestone Notifications",
+    "milestoneNotificationsDescription": "Receive celebratory messages when goals reach 25%, 50%, 75%, and 100%",
+    "save": "Save Preferences",
+    "saving": "Saving...",
+    "success": "Preferences saved successfully."
+  },
+  "Footer": {
+    "tagline": "Empowering global savings through decentralized technology.",
+    "product": "Product",
+    "company": "Company",
+    "community": "Community",
+    "productLinks": {
+      "flexibleSavings": "Flexible Savings",
+      "lockedSavings": "Locked Savings",
+      "goalFund": "Goal Fund",
+      "groupSavings": "Group Savings"
+    },
+    "companyLinks": {
+      "about": "About",
+      "blog": "Blog",
+      "careers": "Careers",
+      "press": "Press"
+    },
+    "communityLinks": {
+      "discord": "Discord",
+      "twitter": "Twitter",
+      "github": "GitHub",
+      "docs": "Documentation"
+    },
+    "copyright": "© 2026 Nestera. All rights reserved."
+  }
+}

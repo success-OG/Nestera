@@ -230,7 +230,10 @@ export class SavingsService {
         const balanceStr = (balance / 10_000_000).toFixed(7);
         await this.cacheManager.set(
           cacheKey,
-          JSON.stringify({ balance: balanceStr, updatedAt: new Date().toISOString() }),
+          JSON.stringify({
+            balance: balanceStr,
+            updatedAt: new Date().toISOString(),
+          }),
           300_000,
         );
       } catch (cacheErr) {

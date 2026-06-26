@@ -1,11 +1,9 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsNotEmpty,
-} from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsNotEmpty } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { DisputeStatus, DisputePriority } from '../../disputes/entities/dispute.entity';
+import {
+  DisputeStatus,
+  DisputePriority,
+} from '../../disputes/entities/dispute.entity';
 
 export class DisputeFilterDto {
   @ApiPropertyOptional({ enum: DisputeStatus })
@@ -47,7 +45,10 @@ export class ResolveDisputeDto {
   @IsNotEmpty()
   resolution: string;
 
-  @ApiPropertyOptional({ enum: DisputeStatus, description: 'Final status after resolution' })
+  @ApiPropertyOptional({
+    enum: DisputeStatus,
+    description: 'Final status after resolution',
+  })
   @IsOptional()
   @IsEnum(DisputeStatus)
   status?: DisputeStatus;
@@ -76,7 +77,9 @@ export class AddEvidenceDto {
   @IsNotEmpty()
   url: string;
 
-  @ApiPropertyOptional({ description: 'Type of evidence (e.g., document, image, pdf)' })
+  @ApiPropertyOptional({
+    description: 'Type of evidence (e.g., document, image, pdf)',
+  })
   @IsOptional()
   @IsString()
   type?: string;

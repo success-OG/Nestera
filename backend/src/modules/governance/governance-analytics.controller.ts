@@ -4,6 +4,7 @@ import { Response } from 'express';
 import { GovernanceAnalyticsService } from './governance-analytics.service';
 import { ParticipationStatsDto } from './dto/participation-stats.dto';
 import { ProposalAnalyticsDto } from './dto/proposal-analytics.dto';
+import { TemplateUsageDto } from './dto/template-usage.dto';
 import { TopVoterDto } from './dto/top-voter.dto';
 import { GovernanceTrendDto } from './dto/governance-trend.dto';
 
@@ -20,7 +21,9 @@ export class GovernanceAnalyticsController {
   }
 
   @Get('proposals')
-  @ApiOperation({ summary: 'Get proposal success rates and category breakdown' })
+  @ApiOperation({
+    summary: 'Get proposal success rates and category breakdown',
+  })
   @ApiResponse({ status: 200, type: ProposalAnalyticsDto })
   async getProposalAnalytics(): Promise<ProposalAnalyticsDto> {
     return this.analyticsService.getProposalAnalytics();
@@ -40,13 +43,26 @@ export class GovernanceAnalyticsController {
     return this.analyticsService.getTrends();
   }
 
+  @Get('templates')
+  @ApiOperation({ summary: 'Get governance template usage analytics' })
+  @ApiResponse({ status: 200, type: [TemplateUsageDto] })
+  async getTemplateUsage(): Promise<TemplateUsageDto[]> {
+    return this.analyticsService.getTemplateUsage();
+  }
+
   @Get('export')
   @ApiOperation({ summary: 'Export governance data for research (JSON)' })
-  @ApiResponse({ status: 200, description: 'JSON download of governance historical data' })
+  @ApiResponse({
+    status: 200,
+    description: 'JSON download of governance historical data',
+  })
   async exportData(@Res() res: Response): Promise<void> {
     const data = await this.analyticsService.exportData();
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename=governance-export.json');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=governance-export.json',
+    );
     res.send(JSON.stringify(data, null, 2));
   }
 }

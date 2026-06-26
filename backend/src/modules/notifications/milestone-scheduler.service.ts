@@ -8,6 +8,7 @@ import {
   SavingsGoalStatus,
 } from '../savings/entities/savings-goal.entity';
 import { SavingsService } from '../savings/savings.service';
+import { ShutdownTrackedTask } from '../../common/decorators/shutdown-task.decorator';
 
 @Injectable()
 export class MilestoneSchedulerService {
@@ -24,6 +25,7 @@ export class MilestoneSchedulerService {
   ) {}
 
   // Run daily at midnight UTC
+  @ShutdownTrackedTask()
   @Cron('0 0 0 * * *')
   async handleDailyMilestones() {
     this.logger.log('Running daily milestone scheduler');

@@ -15,6 +15,7 @@ import {
   Copy,
   LayoutGrid,
   History,
+  Activity,
 } from "lucide-react";
 
 const navLinks = [
@@ -24,6 +25,7 @@ const navLinks = [
   { label: "Analytics", href: "/dashboard/analytics", icon: PieChart },
   { label: "Governance", href: "/dashboard/governance", icon: ShieldCheck },
   { label: "Transactions", href: "/dashboard/transactions", icon: History },
+  { label: "Contract Monitor", href: "/dashboard/contract-monitor", icon: Activity },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

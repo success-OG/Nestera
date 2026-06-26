@@ -7,6 +7,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
+import { Observable, EMPTY } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { GracefulShutdownService } from '../services/graceful-shutdown.service';
 
@@ -26,6 +27,13 @@ export class GracefulShutdownInterceptor implements NestInterceptor {
             HttpStatus.SERVICE_UNAVAILABLE,
           ),
       );
+      const response = context.switchToHttp().getResponse();
+      response.setHeader?.('Connection', 'close');
+      response.status(503).json({
+        statusCode: 503,
+        message: 'Service is shutting down',
+      });
+      return EMPTY;
     }
 
     this.gracefulShutdown.incrementActiveRequests();

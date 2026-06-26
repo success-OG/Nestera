@@ -38,14 +38,12 @@ export class CampaignsService {
     return this.campaignRepository
       .createQueryBuilder('campaign')
       .where('campaign.isActive = :isActive', { isActive: true })
-      .andWhere(
-        '(campaign.startDate IS NULL OR campaign.startDate <= :now)',
-        { now },
-      )
-      .andWhere(
-        '(campaign.endDate IS NULL OR campaign.endDate >= :now)',
-        { now },
-      )
+      .andWhere('(campaign.startDate IS NULL OR campaign.startDate <= :now)', {
+        now,
+      })
+      .andWhere('(campaign.endDate IS NULL OR campaign.endDate >= :now)', {
+        now,
+      })
       .getMany();
   }
 
@@ -68,7 +66,8 @@ export class CampaignsService {
     if (dto.rewardAmount !== undefined)
       campaign.rewardAmount = dto.rewardAmount.toString();
     if (dto.refereeRewardAmount !== undefined)
-      campaign.refereeRewardAmount = dto.refereeRewardAmount?.toString() || null;
+      campaign.refereeRewardAmount =
+        dto.refereeRewardAmount?.toString() || null;
     if (dto.minDepositAmount !== undefined)
       campaign.minDepositAmount = dto.minDepositAmount.toString();
     if (dto.maxRewardsPerUser !== undefined)

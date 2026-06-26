@@ -1,8 +1,21 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
-import { AuditLog, AuditAction, AuditResourceType } from '../../common/entities/audit-log.entity';
-import { AuditLogFilterDto, AuditLogExportDto } from './dto/admin-audit-log.dto';
+import {
+  Repository,
+  Between,
+  Like,
+  MoreThanOrEqual,
+  LessThanOrEqual,
+} from 'typeorm';
+import {
+  AuditLog,
+  AuditAction,
+  AuditResourceType,
+} from '../../common/entities/audit-log.entity';
+import {
+  AuditLogFilterDto,
+  AuditLogExportDto,
+} from './dto/admin-audit-log.dto';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -15,13 +28,16 @@ export class AdminAuditLogsService {
     private readonly auditLogRepository: Repository<AuditLog>,
     private readonly configService: ConfigService,
   ) {
-    this.RETENTION_DAYS = this.configService.get<number>('audit.retentionDays') || 90;
+    this.RETENTION_DAYS =
+      this.configService.get<number>('audit.retentionDays') || 90;
   }
 
   /**
    * Find all audit logs with filters and pagination
    */
-  async findAll(filters: AuditLogFilterDto): Promise<{ logs: AuditLog[]; total: number; page: number; limit: number }> {
+  async findAll(
+    filters: AuditLogFilterDto,
+  ): Promise<{ logs: AuditLog[]; total: number; page: number; limit: number }> {
     const page = filters.page || 1;
     const limit = filters.limit || 20;
     const skip = (page - 1) * limit;
@@ -29,7 +45,9 @@ export class AdminAuditLogsService {
     const query = this.auditLogRepository.createQueryBuilder('auditLog');
 
     if (filters.actor) {
-      query.andWhere('auditLog.actor LIKE :actor', { actor: `%${filters.actor}%` });
+      query.andWhere('auditLog.actor LIKE :actor', {
+        actor: `%${filters.actor}%`,
+      });
     }
 
     if (filters.action) {
@@ -37,19 +55,27 @@ export class AdminAuditLogsService {
     }
 
     if (filters.resourceType) {
-      query.andWhere('auditLog.resourceType = :resourceType', { resourceType: filters.resourceType });
+      query.andWhere('auditLog.resourceType = :resourceType', {
+        resourceType: filters.resourceType,
+      });
     }
 
     if (filters.resourceId) {
-      query.andWhere('auditLog.resourceId = :resourceId', { resourceId: filters.resourceId });
+      query.andWhere('auditLog.resourceId = :resourceId', {
+        resourceId: filters.resourceId,
+      });
     }
 
     if (filters.fromDate) {
-      query.andWhere('auditLog.timestamp >= :fromDate', { fromDate: filters.fromDate });
+      query.andWhere('auditLog.timestamp >= :fromDate', {
+        fromDate: filters.fromDate,
+      });
     }
 
     if (filters.toDate) {
-      query.andWhere('auditLog.timestamp <= :toDate', { toDate: filters.toDate });
+      query.andWhere('auditLog.timestamp <= :toDate', {
+        toDate: filters.toDate,
+      });
     }
 
     query.orderBy('auditLog.timestamp', 'DESC');
@@ -83,11 +109,16 @@ export class AdminAuditLogsService {
   /**
    * Export audit logs to CSV or JSON format
    */
-  async exportLogs(filters: AuditLogExportDto, format: 'csv' | 'json' = 'csv'): Promise<string> {
+  async exportLogs(
+    filters: AuditLogExportDto,
+    format: 'csv' | 'json' = 'csv',
+  ): Promise<string> {
     const query = this.auditLogRepository.createQueryBuilder('auditLog');
 
     if (filters.actor) {
-      query.andWhere('auditLog.actor LIKE :actor', { actor: `%${filters.actor}%` });
+      query.andWhere('auditLog.actor LIKE :actor', {
+        actor: `%${filters.actor}%`,
+      });
     }
 
     if (filters.action) {
@@ -95,19 +126,27 @@ export class AdminAuditLogsService {
     }
 
     if (filters.resourceType) {
-      query.andWhere('auditLog.resourceType = :resourceType', { resourceType: filters.resourceType });
+      query.andWhere('auditLog.resourceType = :resourceType', {
+        resourceType: filters.resourceType,
+      });
     }
 
     if (filters.resourceId) {
-      query.andWhere('auditLog.resourceId = :resourceId', { resourceId: filters.resourceId });
+      query.andWhere('auditLog.resourceId = :resourceId', {
+        resourceId: filters.resourceId,
+      });
     }
 
     if (filters.fromDate) {
-      query.andWhere('auditLog.timestamp >= :fromDate', { fromDate: filters.fromDate });
+      query.andWhere('auditLog.timestamp >= :fromDate', {
+        fromDate: filters.fromDate,
+      });
     }
 
     if (filters.toDate) {
-      query.andWhere('auditLog.timestamp <= :toDate', { toDate: filters.toDate });
+      query.andWhere('auditLog.timestamp <= :toDate', {
+        toDate: filters.toDate,
+      });
     }
 
     query.orderBy('auditLog.timestamp', 'DESC');
@@ -159,8 +198,12 @@ export class AdminAuditLogsService {
         log.ipAddress || '',
         log.userAgent ? `"${log.userAgent.replace(/"/g, '""')}"` : '',
         log.description ? `"${log.description.replace(/"/g, '""')}"` : '',
-        log.previousValue ? `"${JSON.stringify(log.previousValue).replace(/"/g, '""')}"` : '',
-        log.newValue ? `"${JSON.stringify(log.newValue).replace(/"/g, '""')}"` : '',
+        log.previousValue
+          ? `"${JSON.stringify(log.previousValue).replace(/"/g, '""')}"`
+          : '',
+        log.newValue
+          ? `"${JSON.stringify(log.newValue).replace(/"/g, '""')}"`
+          : '',
       ];
       csvRows.push(row.join(','));
     }
@@ -171,7 +214,10 @@ export class AdminAuditLogsService {
   /**
    * Get audit log statistics
    */
-  async getStats(fromDate?: string, toDate?: string): Promise<{
+  async getStats(
+    fromDate?: string,
+    toDate?: string,
+  ): Promise<{
     totalLogs: number;
     byAction: Record<string, number>;
     byResourceType: Record<string, number>;
@@ -200,7 +246,8 @@ export class AdminAuditLogsService {
     // Count by resource type
     const byResourceType: Record<string, number> = {};
     for (const log of logs) {
-      byResourceType[log.resourceType] = (byResourceType[log.resourceType] || 0) + 1;
+      byResourceType[log.resourceType] =
+        (byResourceType[log.resourceType] || 0) + 1;
     }
 
     // Top actors
@@ -244,7 +291,9 @@ export class AdminAuditLogsService {
       .execute();
 
     const deletedCount = result.affected || 0;
-    this.logger.log(`Cleaned up ${deletedCount} audit logs older than ${this.RETENTION_DAYS} days`);
+    this.logger.log(
+      `Cleaned up ${deletedCount} audit logs older than ${this.RETENTION_DAYS} days`,
+    );
 
     return deletedCount;
   }
@@ -255,7 +304,8 @@ export class AdminAuditLogsService {
   getRetentionPolicy(): { retentionDays: number; configured: boolean } {
     return {
       retentionDays: this.RETENTION_DAYS,
-      configured: this.configService.get<number>('audit.retentionDays') !== undefined,
+      configured:
+        this.configService.get<number>('audit.retentionDays') !== undefined,
     };
   }
 }

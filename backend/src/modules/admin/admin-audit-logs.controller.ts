@@ -19,7 +19,10 @@ import {
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { AdminAuditLogsService } from './admin-audit-logs.service';
-import { AuditLogFilterDto, AuditLogExportDto } from './dto/admin-audit-log.dto';
+import {
+  AuditLogFilterDto,
+  AuditLogExportDto,
+} from './dto/admin-audit-log.dto';
 import { AuditLog } from '../../common/entities/audit-log.entity';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -41,7 +44,10 @@ export class AdminAuditLogsController {
     description: 'List of audit logs',
     schema: {
       properties: {
-        logs: { type: 'array', items: { $ref: '#/components/schemas/AuditLog' } },
+        logs: {
+          type: 'array',
+          items: { $ref: '#/components/schemas/AuditLog' },
+        },
         total: { type: 'number' },
         page: { type: 'number' },
         limit: { type: 'number' },
@@ -49,8 +55,40 @@ export class AdminAuditLogsController {
     },
   })
   @ApiQuery({ name: 'actor', required: false, type: String })
-  @ApiQuery({ name: 'action', required: false, enum: ['CREATE', 'UPDATE', 'DELETE', 'READ', 'LOGIN', 'LOGOUT', 'APPROVE', 'REJECT', 'ESCALATE', 'RESOLVE', 'ASSIGN', 'EXPORT'] })
-  @ApiQuery({ name: 'resourceType', required: false, enum: ['USER', 'DISPUTE', 'CLAIM', 'SAVINGS', 'TRANSACTION', 'CONFIG', 'KYC', 'NOTIFICATION', 'ADMIN', 'SYSTEM'] })
+  @ApiQuery({
+    name: 'action',
+    required: false,
+    enum: [
+      'CREATE',
+      'UPDATE',
+      'DELETE',
+      'READ',
+      'LOGIN',
+      'LOGOUT',
+      'APPROVE',
+      'REJECT',
+      'ESCALATE',
+      'RESOLVE',
+      'ASSIGN',
+      'EXPORT',
+    ],
+  })
+  @ApiQuery({
+    name: 'resourceType',
+    required: false,
+    enum: [
+      'USER',
+      'DISPUTE',
+      'CLAIM',
+      'SAVINGS',
+      'TRANSACTION',
+      'CONFIG',
+      'KYC',
+      'NOTIFICATION',
+      'ADMIN',
+      'SYSTEM',
+    ],
+  })
   @ApiQuery({ name: 'resourceId', required: false, type: String })
   @ApiQuery({ name: 'fromDate', required: false, type: String })
   @ApiQuery({ name: 'toDate', required: false, type: String })
@@ -87,7 +125,11 @@ export class AdminAuditLogsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get audit log by ID' })
-  @ApiResponse({ status: 200, description: 'Audit log details', type: AuditLog })
+  @ApiResponse({
+    status: 200,
+    description: 'Audit log details',
+    type: AuditLog,
+  })
   @ApiResponse({ status: 404, description: 'Audit log not found' })
   async getAuditLog(@Param('id') id: string) {
     return await this.auditLogsService.findOne(id);
@@ -120,13 +162,18 @@ export class AdminAuditLogsController {
   }
 
   @Post('cleanup')
-  @ApiOperation({ summary: 'Clean up old audit logs based on retention policy' })
+  @ApiOperation({
+    summary: 'Clean up old audit logs based on retention policy',
+  })
   @ApiResponse({
     status: 200,
     description: 'Number of deleted logs',
   })
   async cleanupOldLogs() {
     const deletedCount = await this.auditLogsService.cleanupOldLogs();
-    return { deletedCount, message: `Successfully cleaned up ${deletedCount} old audit logs` };
+    return {
+      deletedCount,
+      message: `Successfully cleaned up ${deletedCount} old audit logs`,
+    };
   }
 }

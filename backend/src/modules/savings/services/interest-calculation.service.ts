@@ -4,9 +4,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { v4 as uuidv4 } from 'uuid';
-import { UserSubscription, SubscriptionStatus } from '../entities/user-subscription.entity';
+import {
+  UserSubscription,
+  SubscriptionStatus,
+} from '../entities/user-subscription.entity';
 import { InterestHistory } from '../entities/interest-history.entity';
 import { SavingsProductType } from '../entities/savings-product.entity';
+import { ShutdownTrackedTask } from '../../../common/decorators/shutdown-task.decorator';
 
 export interface InterestCreditedEvent {
   userId: string;
@@ -34,20 +38,25 @@ export class InterestCalculationService {
    * Runs daily at midnight UTC.
    * Calculates and distributes daily accrued interest for all active subscriptions.
    */
+  @ShutdownTrackedTask()
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { timeZone: 'UTC' })
   async runDailyInterestCalculation(): Promise<void> {
     const runId = uuidv4();
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    this.logger.log(`[runId=${runId}] Starting daily interest calculation for ${today.toISOString().split('T')[0]}`);
+    this.logger.log(
+      `[runId=${runId}] Starting daily interest calculation for ${today.toISOString().split('T')[0]}`,
+    );
 
     const subscriptions = await this.subscriptionRepo.find({
       where: { status: SubscriptionStatus.ACTIVE },
       relations: ['product'],
     });
 
-    this.logger.log(`[runId=${runId}] Found ${subscriptions.length} active subscriptions`);
+    this.logger.log(
+      `[runId=${runId}] Found ${subscriptions.length} active subscriptions`,
+    );
 
     let processed = 0;
     let skipped = 0;
@@ -55,7 +64,11 @@ export class InterestCalculationService {
 
     for (const subscription of subscriptions) {
       try {
-        const credited = await this.processSubscription(subscription, today, runId);
+        const credited = await this.processSubscription(
+          subscription,
+          today,
+          runId,
+        );
         if (credited) {
           processed++;
         } else {
@@ -111,21 +124,26 @@ export class InterestCalculationService {
     const daysInYear = this.getDaysInYear(calculationDate.getUTCFullYear());
 
     // Daily simple interest: I = P * (r/365) * days
-    const dailyInterest = principal * (annualRate / 100 / daysInYear) * periodDays;
+    const dailyInterest =
+      principal * (annualRate / 100 / daysInYear) * periodDays;
 
     if (dailyInterest <= 0) {
       return false;
     }
 
     const interestEarned = parseFloat(dailyInterest.toFixed(7));
-    const currentTotal = parseFloat(subscription.totalInterestEarned as unknown as string) || 0;
+    const currentTotal = parseFloat(subscription.totalInterestEarned) || 0;
     const newTotal = parseFloat((currentTotal + interestEarned).toFixed(7));
 
     await this.dataSource.transaction(async (manager) => {
       // Update subscription total interest
-      await manager.update(UserSubscription, { id: subscription.id }, {
-        totalInterestEarned: newTotal.toString(),
-      });
+      await manager.update(
+        UserSubscription,
+        { id: subscription.id },
+        {
+          totalInterestEarned: newTotal.toString(),
+        },
+      );
 
       // Insert audit record
       const record = manager.create(InterestHistory, {
@@ -163,6 +181,6 @@ export class InterestCalculationService {
 
   /** Returns 366 for leap years, 365 otherwise. */
   private getDaysInYear(year: number): number {
-    return (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
+    return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 366 : 365;
   }
 }

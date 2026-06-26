@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { GovernanceIndexerService } from './governance-indexer.service';
 import {
   GovernanceProposal,
   ProposalStatus,
 } from './entities/governance-proposal.entity';
 import { Vote, VoteDirection } from './entities/vote.entity';
+import { Delegation } from './entities/delegation.entity';
 
 describe('GovernanceIndexerService', () => {
   let service: GovernanceIndexerService;
@@ -26,6 +28,16 @@ describe('GovernanceIndexerService', () => {
     save: jest.fn(),
   };
 
+  const mockDelegationRepo = {
+    findOneBy: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+  };
+
+  const mockEventEmitter = {
+    emit: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -37,6 +49,14 @@ describe('GovernanceIndexerService', () => {
         {
           provide: getRepositoryToken(Vote),
           useValue: mockVoteRepo,
+        },
+        {
+          provide: getRepositoryToken(Delegation),
+          useValue: mockDelegationRepo,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
       ],
     }).compile();

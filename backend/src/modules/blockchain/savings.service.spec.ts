@@ -5,7 +5,8 @@ import { StellarService } from './stellar.service';
 
 // Requirements: 7.1, 7.2, 7.3
 
-const MOCK_PUBLIC_KEY = 'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN';
+const MOCK_PUBLIC_KEY =
+  'GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN';
 
 function buildAccountMock(nativeBalance: string) {
   return {

@@ -115,6 +115,12 @@ pub fn create_goal_save(
     ttl::extend_goal_ttl(env, goal_id);
     ttl::extend_user_plan_list_ttl(env, &DataKey::UserGoalSaves(user.clone()));
 
+    // Emit goal-created event
+    env.events().publish(
+        (symbol_short!("goal_new"), user, goal_id),
+        (goal_name, target_amount),
+    );
+
     Ok(goal_id)
 }
 
@@ -184,6 +190,12 @@ pub fn deposit_to_goal_save(
     // Extend TTL on deposit
     ttl::extend_goal_ttl(env, goal_id);
     ttl::extend_user_ttl(env, &user);
+
+    // Emit deposit event
+    env.events().publish(
+        (symbol_short!("goal_dep"), user.clone(), goal_id),
+        net_amount,
+    );
 
     // Transfer fee to treasury if fee > 0
     if fee_amount > 0 {
@@ -298,6 +310,12 @@ pub fn withdraw_completed_goal_save(
         // Record fee in treasury struct
         crate::treasury::record_fee(env, fee_amount, soroban_sdk::Symbol::new(env, "withdraw"));
     }
+
+    // Emit withdrawal event
+    env.events().publish(
+        (symbol_short!("goal_wth"), user, goal_id),
+        net_amount,
+    );
 
     Ok(net_amount)
 }

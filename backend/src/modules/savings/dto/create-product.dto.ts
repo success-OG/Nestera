@@ -98,8 +98,6 @@ export class CreateProductDto {
   @ApiPropertyOptional({
     example: 3,
     description: 'Maximum active subscriptions allowed per user',
-    example: 1,
-    description: 'Initial product version',
     default: 1,
   })
   @IsOptional()
