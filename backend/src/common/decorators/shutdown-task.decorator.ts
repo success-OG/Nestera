@@ -8,7 +8,7 @@ export function ShutdownTrackedTask(taskName?: string): MethodDecorator {
       return descriptor;
     }
 
-    descriptor.value = async function (...args: unknown[]) {
+    const wrapped = async function (this: unknown, ...args: unknown[]) {
       const resolvedTaskName =
         taskName ?? `${target.constructor.name}.${String(propertyKey)}`;
 
@@ -16,6 +16,8 @@ export function ShutdownTrackedTask(taskName?: string): MethodDecorator {
         Promise.resolve(originalMethod.apply(this, args)),
       );
     };
+
+    descriptor.value = wrapped as typeof originalMethod;
 
     return descriptor;
   };

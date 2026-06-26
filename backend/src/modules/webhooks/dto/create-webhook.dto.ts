@@ -1,19 +1,3 @@
-import { IsUrl, IsArray, IsString, IsOptional } from 'class-validator';
-
-export class CreateWebhookDto {
-  @IsUrl()
-  url: string;
-
-  @IsArray()
-  @IsString({ each: true })
-  events: string[];
-
-  @IsString()
-  @IsOptional()
-  secret?: string;
-
-  @IsString()
-  @IsOptional()
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsUrl,
@@ -30,7 +14,7 @@ export class CreateWebhookDto {
     description: 'The HTTPS URL to deliver events to',
     example: 'https://example.com/webhooks',
   })
-  @IsUrl({ require_tls: false })
+  @IsUrl({ require_tld: false })
   url: string;
 
   @ApiProperty({

@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, HttpStatus, BadRequestException } from '@nestjs/common';
+import {
+  INestApplication,
+  HttpStatus,
+  BadRequestException,
+} from '@nestjs/common';
 import * as request from 'supertest';
 import { StatisticsController } from './statistics.controller';
 import { StatisticsService } from './services/statistics.service';
@@ -19,6 +23,14 @@ import {
   AnalyticsExportFormat,
   AnalyticsExportStatus,
 } from './entities/analytics-export-job.entity';
+import { UserGrowthMetrics } from './entities/user-growth-metrics.entity';
+import { TransactionMetrics } from './entities/transaction-metrics.entity';
+import { SavingsMetrics } from './entities/savings-metrics.entity';
+import { SystemHealthMetrics } from './entities/system-health-metrics.entity';
+import { SystemStatistics } from './entities/system-statistics.entity';
+import { User } from '../user/entities/user.entity';
+import { Transaction } from '../transactions/entities/transaction.entity';
+import { UserSubscription } from '../savings/entities/user-subscription.entity';
 
 describe('Statistics API (e2e)', () => {
   let app: INestApplication;
@@ -74,7 +86,9 @@ describe('Statistics API (e2e)', () => {
           useValue: {
             exportDirect: jest.fn(async (dataType, query, format) => {
               if (!['json', 'csv', 'xlsx'].includes(format)) {
-                throw new BadRequestException('Invalid analytics export format');
+                throw new BadRequestException(
+                  'Invalid analytics export format',
+                );
               }
 
               const payload = {
@@ -107,7 +121,9 @@ describe('Statistics API (e2e)', () => {
                     ? 'text/csv; charset=utf-8'
                     : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 buffer: Buffer.from(
-                  format === 'csv' ? 'section,totalUsers,totalTransactions\noverview,10,20\n' : 'PK',
+                  format === 'csv'
+                    ? 'section,totalUsers,totalTransactions\noverview,10,20\n'
+                    : 'PK',
                 ),
               };
             }),
@@ -133,35 +149,35 @@ describe('Statistics API (e2e)', () => {
           },
         },
         {
-          provide: getRepositoryToken('UserGrowthMetrics'),
+          provide: getRepositoryToken(UserGrowthMetrics),
           useValue: mockRepositories.UserGrowthMetricsRepository,
         },
         {
-          provide: getRepositoryToken('TransactionMetrics'),
+          provide: getRepositoryToken(TransactionMetrics),
           useValue: mockRepositories.TransactionMetricsRepository,
         },
         {
-          provide: getRepositoryToken('SavingsMetrics'),
+          provide: getRepositoryToken(SavingsMetrics),
           useValue: mockRepositories.SavingsMetricsRepository,
         },
         {
-          provide: getRepositoryToken('SystemHealthMetrics'),
+          provide: getRepositoryToken(SystemHealthMetrics),
           useValue: mockRepositories.SystemHealthMetricsRepository,
         },
         {
-          provide: getRepositoryToken('SystemStatistics'),
+          provide: getRepositoryToken(SystemStatistics),
           useValue: mockRepositories.SystemStatisticsRepository,
         },
         {
-          provide: getRepositoryToken('User'),
+          provide: getRepositoryToken(User),
           useValue: mockRepositories.UserRepository,
         },
         {
-          provide: getRepositoryToken('Transaction'),
+          provide: getRepositoryToken(Transaction),
           useValue: mockRepositories.TransactionRepository,
         },
         {
-          provide: getRepositoryToken('UserSubscription'),
+          provide: getRepositoryToken(UserSubscription),
           useValue: mockRepositories.UserSubscriptionRepository,
         },
         {
@@ -418,7 +434,11 @@ describe('Statistics API (e2e)', () => {
         totalInterestEarned: 250000,
         accountGrowthRate: 2.1,
         tvlGrowthRate: 3.5,
-        accountsByProduct: { Product_A: 3000, Product_B: 2500, Product_C: 2500 },
+        accountsByProduct: {
+          Product_A: 3000,
+          Product_B: 2500,
+          Product_C: 2500,
+        },
         tvlByProduct: {
           Product_A: 2000000,
           Product_B: 1750000,
@@ -539,7 +559,8 @@ describe('Statistics API (e2e)', () => {
     });
 
     it('should return 403 for non-admin users', async () => {
-      const nonAdminToken = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwicm9sZSI6InVzZXIifQ.signature';
+      const nonAdminToken =
+        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwicm9sZSI6InVzZXIifQ.signature';
 
       const response = await request(app.getHttpServer())
         .get('/admin/statistics/overview')
@@ -642,7 +663,9 @@ describe('Statistics API (e2e)', () => {
         .query({ format: 'pdf' })
         .expect(HttpStatus.BAD_REQUEST);
 
-      expect(response.body.message).toContain('Invalid analytics export format');
+      expect(response.body.message).toContain(
+        'Invalid analytics export format',
+      );
     });
   });
 

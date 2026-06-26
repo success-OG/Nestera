@@ -15,7 +15,7 @@ export class UpdateWebhookDto {
     example: 'https://example.com/webhooks/v2',
   })
   @IsOptional()
-  @IsUrl({ require_tls: false })
+  @IsUrl({ require_tld: false })
   url?: string;
 
   @ApiPropertyOptional({
@@ -29,7 +29,10 @@ export class UpdateWebhookDto {
   @IsString({ each: true })
   events?: string[];
 
-  @ApiPropertyOptional({ description: 'New signing secret', example: 'new-secret' })
+  @ApiPropertyOptional({
+    description: 'New signing secret',
+    example: 'new-secret',
+  })
   @IsOptional()
   @IsString()
   @MinLength(8)

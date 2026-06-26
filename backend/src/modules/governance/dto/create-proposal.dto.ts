@@ -85,7 +85,8 @@ export class CreateProposalDto {
   templateId?: string;
 
   @ApiPropertyOptional({
-    description: 'Optional template version. Defaults to the latest available version.',
+    description:
+      'Optional template version. Defaults to the latest available version.',
     example: '1.0',
   })
   @IsOptional()
@@ -97,6 +98,7 @@ export class CreateProposalDto {
       'Template parameter overrides used to build the action payload. Required when using a template.',
     example: { recipient: 'GRECIPIENT123', amount: 5000 },
     type: 'object',
+    additionalProperties: true,
   })
   @IsOptional()
   @IsObject()
@@ -105,6 +107,8 @@ export class CreateProposalDto {
   @ApiPropertyOptional({
     description: 'Structured action payload for the proposal',
     example: { target: 'flexiRate', newValue: 10 },
+    type: 'object',
+    additionalProperties: true,
   })
   @IsOptional()
   @IsObject()
