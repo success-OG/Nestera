@@ -28,14 +28,21 @@ import { GroupSavingsService } from './group-savings.service';
 import { GroupSavingsController } from './group-savings.controller';
 import { AutoDepositSchedule } from './entities/auto-deposit-schedule.entity';
 import { AutoDepositService } from './services/auto-deposit.service';
+import {
+  GoalTransferSchedule,
+  GoalTransferExecution,
+} from './entities/goal-transfer-schedule.entity';
+import { GoalTransferService } from './services/goal-transfer.service';
 import { SavingsGoalShare } from './entities/savings-goal-share.entity';
 import { SavingsGoalShareEvent } from './entities/savings-goal-share-event.entity';
 import { SavingsGoalSharingService } from './savings-goal-sharing.service';
 import { SavingsGoalSharingController } from './savings-goal-sharing.controller';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
+    MailModule,
     TypeOrmModule.forFeature([
       SavingsProduct,
       UserSubscription,
@@ -53,6 +60,8 @@ import { SavingsGoalSharingController } from './savings-goal-sharing.controller'
       SavingsGroupMember,
       SavingsGroupActivity,
       AutoDepositSchedule,
+      GoalTransferSchedule,
+      GoalTransferExecution,
       SavingsGoalShare,
       SavingsGoalShareEvent,
     ]),
@@ -72,6 +81,7 @@ import { SavingsGoalSharingController } from './savings-goal-sharing.controller'
     ExperimentsService,
     GroupSavingsService,
     AutoDepositService,
+    GoalTransferService,
     SavingsGoalSharingService,
   ],
   exports: [

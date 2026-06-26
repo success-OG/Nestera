@@ -24,18 +24,32 @@ export class ConnectionRetryService implements OnModuleInit {
   private readonly retryHistory: RetryAttempt[] = [];
   private readonly maxHistorySize = 500;
 
-  private readonly config: RetryConfig = {
-    maxRetries: parseInt(process.env.DB_MAX_RETRIES || '5', 10),
-    initialDelayMs: parseInt(process.env.DB_RETRY_INITIAL_DELAY || '500', 10),
-    maxDelayMs: parseInt(process.env.DB_RETRY_MAX_DELAY || '30000', 10),
-    backoffMultiplier: parseFloat(process.env.DB_RETRY_BACKOFF || '2.0'),
-    jitterMs: parseInt(process.env.DB_RETRY_JITTER || '100', 10),
-  };
+  private readonly config: RetryConfig;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly dataSource: DataSource,
-  ) {}
+  ) {
+    this.config = {
+      maxRetries: this.configService.get<number>(
+        'database.retry.maxRetries',
+        5,
+      ),
+      initialDelayMs: this.configService.get<number>(
+        'database.retry.initialDelayMs',
+        500,
+      ),
+      maxDelayMs: this.configService.get<number>(
+        'database.retry.maxDelayMs',
+        30000,
+      ),
+      backoffMultiplier: this.configService.get<number>(
+        'database.retry.backoffMultiplier',
+        2.0,
+      ),
+      jitterMs: this.configService.get<number>('database.retry.jitterMs', 100),
+    };
+  }
 
   onModuleInit() {
     this.verifyConnection();
@@ -46,7 +60,9 @@ export class ConnectionRetryService implements OnModuleInit {
       await this.dataSource.query('SELECT 1');
       this.logger.log('Database connection verified successfully');
     } catch (error) {
-      this.logger.warn('Initial DB connection check failed, will retry on demand');
+      this.logger.warn(
+        'Initial DB connection check failed, will retry on demand',
+      );
     }
   }
 
@@ -62,7 +78,9 @@ export class ConnectionRetryService implements OnModuleInit {
         const result = await operation();
         if (attempt > 0) {
           this.recordAttempt(attempt, 0, undefined, true);
-          this.logger.log(`Operation '${operationName}' succeeded after ${attempt} retries`);
+          this.logger.log(
+            `Operation '${operationName}' succeeded after ${attempt} retries`,
+          );
         }
         return result;
       } catch (error) {
@@ -87,7 +105,12 @@ export class ConnectionRetryService implements OnModuleInit {
       }
     }
 
-    throw lastError || new Error(`Operation '${operationName}' failed after ${this.config.maxRetries} retries`);
+    throw (
+      lastError ||
+      new Error(
+        `Operation '${operationName}' failed after ${this.config.maxRetries} retries`,
+      )
+    );
   }
 
   async checkAndReconnect(): Promise<boolean> {
@@ -96,16 +119,13 @@ export class ConnectionRetryService implements OnModuleInit {
       return true;
     } catch {
       this.logger.warn('Connection lost, attempting to reconnect...');
-      return this.executeWithRetry(
-        async () => {
-          if (!this.dataSource.isInitialized) {
-            await this.dataSource.initialize();
-          }
-          await this.dataSource.query('SELECT 1');
-          return true;
-        },
-        'reconnect',
-      ).catch(() => false);
+      return this.executeWithRetry(async () => {
+        if (!this.dataSource.isInitialized) {
+          await this.dataSource.initialize();
+        }
+        await this.dataSource.query('SELECT 1');
+        return true;
+      }, 'reconnect').catch(() => false);
     }
   }
 
@@ -145,7 +165,13 @@ export class ConnectionRetryService implements OnModuleInit {
     error: string | undefined,
     success: boolean,
   ): void {
-    this.retryHistory.push({ attempt, delayMs, timestamp: new Date(), error, success });
+    this.retryHistory.push({
+      attempt,
+      delayMs,
+      timestamp: new Date(),
+      error,
+      success,
+    });
     if (this.retryHistory.length > this.maxHistorySize) {
       this.retryHistory.shift();
     }
@@ -154,7 +180,9 @@ export class ConnectionRetryService implements OnModuleInit {
   getRetryStats() {
     const total = this.retryHistory.length;
     const failures = this.retryHistory.filter((r) => !r.success);
-    const successes = this.retryHistory.filter((r) => r.success && r.attempt > 0);
+    const successes = this.retryHistory.filter(
+      (r) => r.success && r.attempt > 0,
+    );
 
     return {
       totalAttempts: total,

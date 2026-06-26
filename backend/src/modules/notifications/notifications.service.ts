@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { PageDto } from '../../common/dto/page.dto';
 import { PageMetaDto } from '../../common/dto/page-meta.dto';
@@ -83,6 +83,7 @@ export class NotificationsService {
     @InjectRepository(WaitlistEvent)
     private readonly waitlistEventRepository: Repository<WaitlistEvent>,
     private readonly mailService: MailService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -613,7 +614,35 @@ export class NotificationsService {
       read: false,
     });
 
-    return await this.notificationRepository.save(notification);
+    const savedNotification =
+      await this.notificationRepository.save(notification);
+    this.eventEmitter.emit('notification.created', savedNotification);
+    return savedNotification;
+  }
+
+  async getUnreadNotifications(userId: string): Promise<Notification[]> {
+    return await this.notificationRepository.find({
+      where: { userId, read: false },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async getNotificationsSince(
+    userId: string,
+    since: string | Date,
+  ): Promise<Notification[]> {
+    const sinceDate = typeof since === 'string' ? new Date(since) : since;
+    if (Number.isNaN(sinceDate.getTime())) {
+      return [];
+    }
+
+    return await this.notificationRepository.find({
+      where: {
+        userId,
+        createdAt: MoreThan(sinceDate),
+      },
+      order: { createdAt: 'ASC' },
+    });
   }
 
   /**

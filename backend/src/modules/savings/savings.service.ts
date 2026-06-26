@@ -1012,6 +1012,49 @@ export class SavingsService {
     await this.goalRepository.remove(goal);
   }
 
+  async transferToGoal(
+    userId: string,
+    goalId: string,
+    amount: number,
+    productId?: string,
+  ): Promise<Transaction> {
+    const goal = await this.goalRepository.findOne({
+      where: { id: goalId, userId },
+    });
+    if (!goal) {
+      throw new NotFoundException(
+        `Savings goal ${goalId} not found or does not belong to user`,
+      );
+    }
+    if (goal.status !== SavingsGoalStatus.IN_PROGRESS) {
+      throw new BadRequestException('Cannot transfer to a completed goal');
+    }
+
+    let resolvedProductId = productId;
+    if (!resolvedProductId) {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+      resolvedProductId = user?.defaultSavingsProductId ?? undefined;
+    }
+    if (!resolvedProductId) {
+      throw new BadRequestException(
+        'No savings product specified and user has no default product',
+      );
+    }
+
+    await this.subscribe(userId, resolvedProductId, amount, true);
+
+    const tx = this.transactionRepository.create({
+      userId,
+      type: TxType.DEPOSIT,
+      amount: String(amount),
+      status: TxStatus.COMPLETED,
+      poolId: resolvedProductId,
+      metadata: { goalId, goalName: goal.goalName, transferType: 'GOAL_AUTO' },
+      txHash: `goal-transfer-${goalId}-${Date.now()}`,
+    });
+    return this.transactionRepository.save(tx);
+  }
+
   async createWithdrawalRequest(
     userId: string,
     subscriptionId: string,

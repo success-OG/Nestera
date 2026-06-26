@@ -9,6 +9,58 @@ export default () => ({
     name: process.env.DB_NAME,
     user: process.env.DB_USER,
     pass: process.env.DB_PASS,
+    pool: {
+      max: parseInt(
+        process.env.DATABASE_POOL_MAX ||
+          (process.env.NODE_ENV === 'production' ? '30' : '10'),
+        10,
+      ),
+      min: parseInt(
+        process.env.DATABASE_POOL_MIN ||
+          (process.env.NODE_ENV === 'production' ? '5' : '2'),
+        10,
+      ),
+      maxCeiling: parseInt(process.env.DATABASE_POOL_MAX_CEILING || '50', 10),
+      idleTimeout: parseInt(process.env.DATABASE_IDLE_TIMEOUT || '30000', 10),
+      connectionTimeout: parseInt(
+        process.env.DATABASE_CONNECTION_TIMEOUT || '2000',
+        10,
+      ),
+      statementTimeout: parseInt(
+        process.env.DATABASE_STATEMENT_TIMEOUT || '30000',
+        10,
+      ),
+      queryTimeout: parseInt(process.env.DATABASE_QUERY_TIMEOUT || '30000', 10),
+      monitorIntervalMs: parseInt(
+        process.env.DATABASE_POOL_MONITOR_INTERVAL || '30000',
+        10,
+      ),
+      scaleUpThreshold: parseInt(
+        process.env.DATABASE_POOL_SCALE_UP_THRESHOLD || '80',
+        10,
+      ),
+      scaleDownThreshold: parseInt(
+        process.env.DATABASE_POOL_SCALE_DOWN_THRESHOLD || '30',
+        10,
+      ),
+      exhaustionWaitingThreshold: parseInt(
+        process.env.DATABASE_POOL_EXHAUSTION_WAITING_THRESHOLD || '1',
+        10,
+      ),
+      leakDetectionThreshold: parseInt(
+        process.env.DATABASE_POOL_LEAK_THRESHOLD || '90',
+        10,
+      ),
+      allowExitOnIdle: process.env.DATABASE_POOL_ALLOW_EXIT_ON_IDLE === 'true',
+      autoScale: process.env.DATABASE_POOL_AUTO_SCALE !== 'false',
+    },
+    retry: {
+      maxRetries: parseInt(process.env.DB_MAX_RETRIES || '5', 10),
+      initialDelayMs: parseInt(process.env.DB_RETRY_INITIAL_DELAY || '500', 10),
+      maxDelayMs: parseInt(process.env.DB_RETRY_MAX_DELAY || '30000', 10),
+      backoffMultiplier: parseFloat(process.env.DB_RETRY_BACKOFF || '2.0'),
+      jitterMs: parseInt(process.env.DB_RETRY_JITTER || '100', 10),
+    },
   },
   jwt: {
     secret: process.env.JWT_SECRET,

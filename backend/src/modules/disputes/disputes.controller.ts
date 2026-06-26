@@ -7,6 +7,7 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { DisputesService } from './disputes.service';
@@ -77,5 +78,50 @@ export class DisputesController {
     @Body() addMessageDto: AddDisputeMessageDto,
   ): Promise<DisputeMessage> {
     return await this.disputesService.addMessage(id, addMessageDto);
+  }
+
+  @Patch(':id/investigate')
+  @ApiOperation({ summary: 'Start investigation' })
+  @ApiResponse({ status: 200, description: 'Investigation started', type: Dispute })
+  @ApiResponse({ status: 404, description: 'Dispute not found' })
+  async startInvestigation(
+    @Param('id') id: string,
+    @Query('actor') actor: string,
+  ): Promise<Dispute> {
+    return await this.disputesService.startInvestigation(id, actor);
+  }
+
+  @Patch(':id/resolve')
+  @ApiOperation({ summary: 'Resolve dispute' })
+  @ApiResponse({ status: 200, description: 'Dispute resolved', type: Dispute })
+  @ApiResponse({ status: 404, description: 'Dispute not found' })
+  async resolveDispute(
+    @Param('id') id: string,
+    @Query('actor') actor: string,
+    @Body('resolution') resolution: string,
+  ): Promise<Dispute> {
+    return await this.disputesService.resolveDispute(id, actor, resolution);
+  }
+
+  @Patch(':id/close')
+  @ApiOperation({ summary: 'Close dispute' })
+  @ApiResponse({ status: 200, description: 'Dispute closed', type: Dispute })
+  @ApiResponse({ status: 404, description: 'Dispute not found' })
+  async closeDispute(
+    @Param('id') id: string,
+    @Query('actor') actor: string,
+  ): Promise<Dispute> {
+    return await this.disputesService.closeDispute(id, actor);
+  }
+
+  @Patch(':id/escalate')
+  @ApiOperation({ summary: 'Escalate dispute' })
+  @ApiResponse({ status: 200, description: 'Dispute escalated', type: Dispute })
+  @ApiResponse({ status: 404, description: 'Dispute not found' })
+  async escalateDispute(
+    @Param('id') id: string,
+    @Query('actor') actor: string,
+  ): Promise<Dispute> {
+    return await this.disputesService.escalateDispute(id, actor);
   }
 }

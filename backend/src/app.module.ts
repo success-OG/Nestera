@@ -17,6 +17,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import configuration from './config/configuration';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { buildTypeOrmModuleOptions } from './common/database/typeorm-pool.config';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { BlockchainModule } from './modules/blockchain/blockchain.module';
@@ -54,6 +55,7 @@ import { GracefulShutdownService } from './common/services/graceful-shutdown.ser
 import { ApmModule } from './modules/apm/apm.module';
 import { PerformanceModule } from './modules/performance/performance.module';
 import { SandboxModule } from './modules/sandbox/sandbox.module';
+import { FeedbackModule } from './modules/feedback/feedback.module';
 import { StatisticsModule } from './modules/statistics/statistics.module';
 import { FeatureFlagsModule } from './modules/feature-flags/feature-flags.module';
 
@@ -67,6 +69,33 @@ const envValidationSchema = Joi.object({
   DB_USER: Joi.string().optional(),
   DB_PASS: Joi.string().optional(),
   DATABASE_URL: Joi.string().uri().optional(),
+
+  DATABASE_POOL_MAX: Joi.number().integer().min(1).default(10),
+  DATABASE_POOL_MIN: Joi.number().integer().min(0).default(2),
+  DATABASE_POOL_MAX_CEILING: Joi.number().integer().min(1).default(50),
+  DATABASE_IDLE_TIMEOUT: Joi.number().integer().min(1000).default(30000),
+  DATABASE_CONNECTION_TIMEOUT: Joi.number().integer().min(100).default(2000),
+  DATABASE_STATEMENT_TIMEOUT: Joi.number().integer().min(1000).default(30000),
+  DATABASE_QUERY_TIMEOUT: Joi.number().integer().min(1000).default(30000),
+  DATABASE_POOL_MONITOR_INTERVAL: Joi.number()
+    .integer()
+    .min(5000)
+    .default(30000),
+  DATABASE_POOL_SCALE_UP_THRESHOLD: Joi.number().min(1).max(100).default(80),
+  DATABASE_POOL_SCALE_DOWN_THRESHOLD: Joi.number().min(1).max(100).default(30),
+  DATABASE_POOL_EXHAUSTION_WAITING_THRESHOLD: Joi.number()
+    .integer()
+    .min(0)
+    .default(1),
+  DATABASE_POOL_LEAK_THRESHOLD: Joi.number().min(1).max(100).default(90),
+  DATABASE_POOL_ALLOW_EXIT_ON_IDLE: Joi.boolean().default(false),
+  DATABASE_POOL_AUTO_SCALE: Joi.boolean().default(true),
+
+  DB_MAX_RETRIES: Joi.number().integer().min(0).default(5),
+  DB_RETRY_INITIAL_DELAY: Joi.number().integer().min(0).default(500),
+  DB_RETRY_MAX_DELAY: Joi.number().integer().min(0).default(30000),
+  DB_RETRY_BACKOFF: Joi.number().min(1).default(2.0),
+  DB_RETRY_JITTER: Joi.number().integer().min(0).default(100),
 
   JWT_SECRET: Joi.string().min(10).required(),
   JWT_EXPIRATION: Joi.string().required(),
@@ -257,38 +286,8 @@ const envValidationSchema = Joi.object({
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const dbUrl = configService.get<string>('database.url');
-        const dbHost = configService.get<string>('database.host');
-
-        if (dbUrl) {
-          // URL-based connection (e.g. DATABASE_URL on cloud platforms)
-          return {
-            type: 'postgres' as const,
-            url: dbUrl,
-            autoLoadEntities: true,
-            synchronize: configService.get<string>('NODE_ENV') !== 'production',
-          };
-        }
-
-        // Host-based connection (uses DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS)
-        if (!dbHost) {
-          throw new Error(
-            'Database configuration error: set either DATABASE_URL or DB_HOST in your environment.',
-          );
-        }
-
-        return {
-          type: 'postgres' as const,
-          host: dbHost,
-          port: configService.get<number>('database.port') ?? 5432,
-          database: configService.get<string>('database.name'),
-          username: configService.get<string>('database.user'),
-          password: configService.get<string>('database.pass'),
-          autoLoadEntities: true,
-          synchronize: configService.get<string>('NODE_ENV') !== 'production',
-        };
-      },
+      useFactory: (configService: ConfigService) =>
+        buildTypeOrmModuleOptions(configService),
     }),
     AuthModule,
     CacheModule,
@@ -326,6 +325,7 @@ const envValidationSchema = Joi.object({
     FeatureFlagsModule,
     JobsModule,
     SandboxModule,
+    FeedbackModule,
     CommonModule,
     ThrottlerModule.forRoot([
       {
