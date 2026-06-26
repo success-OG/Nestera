@@ -117,6 +117,17 @@ export class UserController {
   }
 
   @Get('me/net-worth')
+  @ApiOperation({
+    summary: 'Get net worth breakdown for the authenticated user',
+    description:
+      'Returns wallet balance, savings breakdown (flexible/locked), and percentage allocations.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Net worth breakdown',
+    type: NetWorthDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getNetWorth(@CurrentUser() user: { id: string }): Promise<NetWorthDto> {
     const userEntity = await this.userService.findById(user.id);
 
@@ -162,21 +173,33 @@ export class UserController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a user by ID' })
+  @ApiResponse({ status: 200, description: 'User found' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   findOne(@Param('id') id: string) {
     return this.userService.findById(id);
   }
 
   @Patch('me')
+  @ApiOperation({ summary: 'Update the authenticated user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   updateMe(@CurrentUser() user: { id: string }, @Body() dto: UpdateUserDto) {
     return this.userService.update(user.id, dto);
   }
 
   @Delete('me')
+  @ApiOperation({ summary: 'Delete the authenticated user account' })
+  @ApiResponse({ status: 200, description: 'Account deleted' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   deleteMe(@CurrentUser() user: { id: string }) {
     return this.userService.remove(user.id);
   }
 
   @Post('avatar')
+  @ApiOperation({ summary: 'Upload a profile avatar image' })
+  @ApiResponse({ status: 201, description: 'Avatar uploaded' })
+  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(
     @CurrentUser() user: { id: string },
@@ -195,6 +218,9 @@ export class UserController {
   }
 
   @Post('me/kyc-docs')
+  @ApiOperation({ summary: 'Upload a KYC verification document' })
+  @ApiResponse({ status: 201, description: 'Document uploaded' })
+  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
   @UseInterceptors(FileInterceptor('document'))
   async uploadKycDocument(
     @CurrentUser() user: { id: string },

@@ -8,6 +8,31 @@ import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { v4 as uuidv4 } from 'uuid';
 import { Request, Response } from 'express';
+import { SecretsConfigService } from '../services/secrets-config.service';
+
+const REDACTED_HEADERS = new Set([
+  'authorization',
+  'cookie',
+  'x-api-key',
+  'x-auth-token',
+]);
+
+function sanitizeHeaders(headers: Record<string, any>): Record<string, string> {
+  const safe: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (REDACTED_HEADERS.has(key.toLowerCase())) {
+      safe[key] = '[REDACTED]';
+    } else if (
+      typeof value === 'string' &&
+      SecretsConfigService.isSensitiveKey(key)
+    ) {
+      safe[key] = '[REDACTED]';
+    } else {
+      safe[key] = String(value);
+    }
+  }
+  return safe;
+}
 
 @Injectable()
 export class RequestLoggingInterceptor implements NestInterceptor {
@@ -17,10 +42,10 @@ export class RequestLoggingInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse<Response>();
 
-    const correlationId = request.headers['x-correlation-id'] as string || uuidv4();
+    const correlationId =
+      (request.headers['x-correlation-id'] as string) || uuidv4();
     const startTime = Date.now();
 
-    // Attach correlation ID to request and response
     (request as any).correlationId = correlationId;
     response.setHeader('x-correlation-id', correlationId);
 

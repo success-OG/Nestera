@@ -3,8 +3,10 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { GracefulShutdownService } from '../services/graceful-shutdown.service';
 
@@ -13,14 +15,17 @@ export class GracefulShutdownInterceptor implements NestInterceptor {
   constructor(private gracefulShutdown: GracefulShutdownService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    // Reject new requests during shutdown
     if (this.gracefulShutdown.isShutdown()) {
-      const response = context.switchToHttp().getResponse();
-      response.status(503).json({
-        statusCode: 503,
-        message: 'Service is shutting down',
-      });
-      return;
+      return throwError(
+        () =>
+          new HttpException(
+            {
+              statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+              message: 'Service is shutting down',
+            },
+            HttpStatus.SERVICE_UNAVAILABLE,
+          ),
+      );
     }
 
     this.gracefulShutdown.incrementActiveRequests();

@@ -34,6 +34,9 @@ export class AdminController {
   ) {}
 
   @Patch('users/:id/kyc/approve')
+  @ApiOperation({ summary: 'Approve KYC for a user' })
+  @ApiResponse({ status: 200, description: 'KYC approved' })
+  @ApiResponse({ status: 400, description: 'User ID is required' })
   async approveKyc(@Param('id') userId: string) {
     if (!userId) {
       throw new BadRequestException('User ID is required');
@@ -42,6 +45,12 @@ export class AdminController {
   }
 
   @Patch('users/:id/kyc/reject')
+  @ApiOperation({ summary: 'Reject KYC for a user' })
+  @ApiResponse({ status: 200, description: 'KYC rejected' })
+  @ApiResponse({
+    status: 400,
+    description: 'User ID or rejection reason missing',
+  })
   async rejectKyc(@Param('id') userId: string, @Body() dto: RejectKycDto) {
     if (!userId) {
       throw new BadRequestException('User ID is required');
@@ -53,6 +62,12 @@ export class AdminController {
   }
 
   @Patch('users/:id/kyc')
+  @ApiOperation({ summary: 'Update KYC status (approve or reject)' })
+  @ApiResponse({ status: 200, description: 'KYC status updated' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid action or missing parameters',
+  })
   async updateKycStatus(
     @Param('id') userId: string,
     @Body() body: { action: 'approve' | 'reject'; reason?: string },

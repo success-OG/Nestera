@@ -85,6 +85,9 @@ export class TransactionsController {
   }
 
   @Post(':id/tag')
+  @ApiOperation({ summary: 'Add or update tags on a transaction' })
+  @ApiResponse({ status: 201, description: 'Transaction tagged' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async tagTransaction(
     @CurrentUser() user: { id: string },
     @Param('id') id: string,
@@ -94,11 +97,18 @@ export class TransactionsController {
   }
 
   @Get('categories')
+  @ApiOperation({
+    summary: 'List transaction categories for the authenticated user',
+  })
+  @ApiResponse({ status: 200, description: 'List of categories' })
   async getCategories(@CurrentUser() user: { id: string }) {
     return this.transactionsService.listCategories(user.id);
   }
 
   @Post('tags/bulk')
+  @ApiOperation({ summary: 'Bulk-tag multiple transactions' })
+  @ApiResponse({ status: 201, description: 'Transactions tagged' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async bulkTag(@CurrentUser() user: { id: string }, @Body() body: BulkTagDto) {
     return this.transactionsService.bulkTag(user.id, body);
   }

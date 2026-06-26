@@ -53,10 +53,29 @@ async function bootstrap() {
       )
       .setVersion(version)
       .addBearerAuth()
+      .addApiKey(
+        { type: 'apiKey', name: 'X-API-Version', in: 'header' },
+        'api-version',
+      )
       .build();
     const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup(`api/v${version}/docs`, app, document);
   }
+
+  // Combined Swagger doc at /api/docs
+  const combinedConfig = new DocumentBuilder()
+    .setTitle('Nestera API')
+    .setDescription(
+      'Nestera platform API — all versions. ' +
+        'Use the versioned docs at /api/v1/docs or /api/v2/docs for version-specific views.',
+    )
+    .setVersion(CURRENT_VERSION)
+    .addBearerAuth()
+    .build();
+  const combinedDoc = SwaggerModule.createDocument(app, combinedConfig);
+  SwaggerModule.setup('api/docs', app, combinedDoc);
+
+  app.enableShutdownHooks();
 
   const server = await app.listen(port || 3001);
   const logger = app.get(Logger);
@@ -66,21 +85,27 @@ async function bootstrap() {
   );
   logger.log(`Swagger v2 docs: http://localhost:${port}/api/v2/docs`);
 
-  // Setup graceful shutdown
   const gracefulShutdown = app.get(GracefulShutdownService);
 
-  const signals = ['SIGTERM', 'SIGINT'];
-  signals.forEach((signal) => {
-    process.on(signal, async () => {
-      logger.log(`Received ${signal}, starting graceful shutdown...`);
-      server.close(async () => {
-        await app.close();
-        process.exit(0);
-      });
-    });
-  });
+  const shutdown = async (signal: string) => {
+    logger.log(`Received ${signal}, starting graceful shutdown...`);
 
-  // Handle uncaught exceptions
+    // Stop accepting new connections
+    server.close(() => {
+      logger.log('HTTP server closed — no new connections accepted');
+    });
+
+    // NestJS onApplicationShutdown hooks handle the rest:
+    // drain in-flight requests, stop workers, close DB/Redis
+    await app.close();
+
+    logger.log('Application shut down successfully');
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
+
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught Exception:', error);
     process.exit(1);
